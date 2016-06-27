@@ -2,7 +2,7 @@ import random
 
 __author__ = 'Mark'
 
-g_gbvfile = r"C:\Users\Mark\Desktop\Stupid Crap\midis\gbv.txt"
+g_gbvfile = r".\txt\gbv.txt"
 g_preferredLength = 50
 
 def start_quoting(lines, start_i):

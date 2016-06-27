@@ -2,7 +2,7 @@ import re
 import sys
 import random
 
-g_dict_file = r'C:\Users\Mark\Desktop\Stupid Crap\midis\18thCdialectdict.txt'
+g_dict_file = r'.\txt\18thCdialectdict.txt'
 
 g_outfile = r"C:\tmp\defjam.txt"
 

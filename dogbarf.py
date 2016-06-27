@@ -153,7 +153,7 @@ def get_dog_fmt(reqnum):
     return dognum, retfmt.format(dognum=dognum, plur=plur, dogplur=dogplur)
 
 def get_some_dogs(num=1):
-    with open("C:\Users\Mark\Desktop\Stupid Crap\midis\dogs.txt") as dogf:
+    with open(".\txt\dogs.txt") as dogf:
         dogs = dogf.readlines()
     for dog_i in range(num):
         yield random.choice(dogs).strip()
