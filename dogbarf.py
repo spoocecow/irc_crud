@@ -1,10 +1,14 @@
 import random
 import math, cmath
+import inspect
 import os, sys
 import re
 from acrobot import Acro
 
-DOGSOURCE = r".\txt\dogs.txt"
+_thisfile = inspect.getfile(inspect.currentframe())
+cwd = os.path.dirname(os.path.abspath(_thisfile))
+
+DOGSOURCE = os.path.join(cwd, r"txt\dogs.txt")
 
 def get_dumdum():
     if random.random() < 0.222:
@@ -182,7 +186,7 @@ def dogsay(arg):
     if dognum == 0 or dognum > 30:
         return 'You are a ' + get_dumdum() + ' and u get NO DOGS >:('
         
-    dog_getter = get_some_dogs(dognum)
+    dog_getter = get_some_dogs(int(dognum))
     get_dog = dog_getter.next
 
     s = prefix + ' '
