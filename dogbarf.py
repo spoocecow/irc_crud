@@ -4,6 +4,8 @@ import os, sys
 import re
 from acrobot import Acro
 
+DOGSOURCE = r".\txt\dogs.txt"
+
 def get_dumdum():
     if random.random() < 0.222:
         return Acro.generate_insult()
@@ -153,10 +155,11 @@ def get_dog_fmt(reqnum):
     return dognum, retfmt.format(dognum=dognum, plur=plur, dogplur=dogplur)
 
 def get_some_dogs(num=1):
-    with open(".\txt\dogs.txt") as dogf:
+    with open(DOGSOURCE) as dogf:
         dogs = dogf.readlines()
-    for dog_i in range(num):
-        yield random.choice(dogs).strip()
+    dog_selections = random.sample( xrange(len(dogs)), num )
+    for dog_choice in dog_selections:
+        yield dogs[dog_choice].strip()
 
 def dogsay(arg):
     import string
