@@ -1,8 +1,12 @@
 import re
 import sys
 import random
+import inspect, os
 
-g_dict_file = r'.\txt\18thCdialectdict.txt'
+_thisfile = inspect.getfile(inspect.currentframe())
+cwd = os.path.dirname(os.path.abspath(_thisfile))
+
+g_dict_file = os.path.join(cwd, r'txt\18thCdialectdict.txt')
 
 g_outfile = r"C:\tmp\defjam.txt"
 
