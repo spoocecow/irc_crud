@@ -23,15 +23,25 @@ def get_mean_dumdum():
         ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan']
     )
 
-def get_pleasantry():
-    return random.choice(
-        ['Have a nice day', 'Have a great day', 'Cheers', 'Thanks', 'Thank you', 'Take care', 'Have a good one', "Here's to you", "You look great today"]
-    )
-    
 def get_friend():
     return random.choice(
         ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'fellow dog enthusiast']
     )
+
+def get_pleasantry():
+    return random.choice(
+        ['Have a nice day', 'Have a great day', 'Cheers', 'Thanks', 'Thank you',
+         'Take care', 'Have a good one', "Here's to you", "You look great today"]
+    )
+
+def get_unpleasantry():
+    return random.choice(
+        ["u stink.", "hmmmmm, nah."] * 4 +
+        ["no that's bad.", "why u do this to me."] * 2 +
+        ["u havin a laugh???", "I do not like your request.", "I can't read :("] * 2 +
+        ["what you typed was incomprehensible to little ol' me..."]
+    )
+
 
 def get_dog_fmt(reqnum):
     print repr(reqnum)
@@ -110,7 +120,7 @@ def get_dog_fmt(reqnum):
                 elif p in replaced:
                     print 'glonk', p, eng_2_num[p]
                     replacements.append( (p, eng_2_num[p]) )
-            REPS = replacements[:]
+            available_reps = replacements[:]
             for rep1 in replacements:
                 p1, r1 = rep1
                 for rep2 in replacements:
@@ -119,34 +129,30 @@ def get_dog_fmt(reqnum):
                         continue
                     elif p2 in p1:
                         # keep only the largest match
-                        if rep2 in REPS:
-                            REPS.remove(rep2)
-            for final_rep in REPS:
+                        if rep2 in available_reps:
+                            available_reps.remove(rep2)
+            for final_rep in available_reps:
                 p, rep = final_rep
                 replaced = replaced.replace(p, str(rep))
             evalstr = replaced
             if any( map(str.isalpha, evalstr) ) or '=' in evalstr:
                 print "Invalid/not replaceable, not evaling:", reqnum, " (AKA", evalstr, ')'
                 dognum = random.randint(2,7)
-                retfmt = 'u stink. Here are {dognum:.0f} dogs, {dummy}:'
-                return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum())
+                retfmt = '{nothx} Here are {dognum:.0f} dogs, {dummy}:'
+                return dognum, retfmt.format(nothx=get_unpleasantry(), dognum=dognum, dummy=get_dumdum())
             else:
                 print "evaluating", evalstr
                 try:
                     dognum = float( eval(evalstr) )
                     print "dognum = ", dognum
-                except (SyntaxError, ZeroDivisionError):
+                except (SyntaxError, NameError, ZeroDivisionError):
                     return -1, "u are a {} and a true {}".format( get_mean_dumdum(), get_mean_dumdum() )
                 except TypeError:
-                    try:
-                        dognum = eval(evalstr).real
-                        print "converted complex to float", dognum
-                    except Exception:
-                        print "Barf!", evalstr
-                        dognum = random.randint(2,4)
-                        retfmt = "BARF. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
-                        return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
-                except (ValueError, Exception):
+                    print "Barf!", evalstr
+                    dognum = random.randint(2,4)
+                    retfmt = "BARF. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
+                    return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
+                except ValueError:
                     print "waaaahhhh"
                     dognum = random.randint(2,6)
                     retfmt = "FINE. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
@@ -183,9 +189,12 @@ def dogsay(arg):
     elif dognum < 0:
         formatter = lambda c: ''.join((reversed(c)))
         dognum = abs(dognum)
-    if dognum == 0 or dognum > 30:
-        return 'You are a ' + get_dumdum() + ' and u get NO DOGS >:('
-        
+    if dognum == 0 or dognum > 20:
+        if random.random() < 0.33:
+            return get_unpleasantry() + ' NO DOGS FOR U >:('
+        else:
+            return 'You are a ' + get_dumdum() + ' and u get NO DOGS >:('
+
     dog_getter = get_some_dogs(int(dognum))
     get_dog = dog_getter.next
 
