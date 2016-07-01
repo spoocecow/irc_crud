@@ -6,7 +6,7 @@ import inspect, os
 _thisfile = inspect.getfile(inspect.currentframe())
 cwd = os.path.dirname(os.path.abspath(_thisfile))
 
-g_dict_file = os.path.join(cwd, r'txt\18thCdialectdict.txt')
+g_dict_file = os.path.join(cwd, 'txt', '18thCdialectdict.txt')
 
 g_outfile = r"C:\tmp\defjam.txt"
 
@@ -82,7 +82,6 @@ def find_match(args, word_dict, def_dict):
             if random.random() < 0.3:
                 continue
             associated_def = random.choice(word_dict[arg.lower()])
-            #print arg.lower(), "in word dict"
             return associated_def, random.choice(def_dict[associated_def])
     argstr = ' '.join(args)
     distances = map(lambda c: levenshtein_distance(argstr, c), def_dict.keys())
@@ -90,7 +89,6 @@ def find_match(args, word_dict, def_dict):
     res = []
     for i, (key, entry) in enumerate(def_dict.items()):
         if distances[i] <= min_dst + 1:
-            #print argstr, distances[i], key, entry
             res.append((key, entry))
     defw, entries = random.choice(res)
     return defw, random.choice(entries)

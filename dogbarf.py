@@ -8,7 +8,7 @@ from acrobot import Acro
 _thisfile = inspect.getfile(inspect.currentframe())
 cwd = os.path.dirname(os.path.abspath(_thisfile))
 
-DOGSOURCE = os.path.join(cwd, r"txt\dogs.txt")
+DOGSOURCE = os.path.join(cwd, "txt", "dogs.txt")
 
 def get_dumdum():
     if random.random() < 0.222:
