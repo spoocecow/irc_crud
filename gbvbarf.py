@@ -4,7 +4,7 @@ import inspect, os
 _thisfile = inspect.getfile(inspect.currentframe())
 cwd = os.path.dirname(os.path.abspath(_thisfile))
 
-g_gbvfile = os.path.join(cwd, r"txt\gbv.txt")
+g_gbvfile = os.path.join(cwd, "txt", "gbv.txt")
 g_preferredLength = 50
 
 def start_quoting(lines, start_i):
