@@ -42,7 +42,6 @@ def get_unpleasantry():
         ["what you typed was incomprehensible to little ol' me..."]
     )
 
-
 def get_dog_fmt(reqnum):
     print repr(reqnum)
     plur = 'are'
@@ -195,7 +194,7 @@ def dogsay(arg):
         else:
             return 'You are a ' + get_dumdum() + ' and u get NO DOGS >:('
 
-    dog_getter = get_some_dogs(int(dognum))
+    dog_getter = get_some_dogs(int(math.ceil(dognum)))
     get_dog = dog_getter.next
 
     s = prefix + ' '
