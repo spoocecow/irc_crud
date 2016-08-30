@@ -10,6 +10,9 @@ cwd = os.path.dirname(os.path.abspath(_thisfile))
 
 DOGSOURCE = os.path.join(cwd, "txt", "dogs.txt")
 
+class ZERODOGSRESPONSE(object):
+    pass
+
 def get_dumdum():
     if random.random() < 0.222:
         return Acro.generate_insult()
@@ -159,8 +162,25 @@ def get_dog_fmt(reqnum):
     if dognum == 1:
         plur = 'is'
         dogplur = ''
-    if dognum % 1 != 0:
-            retfmt = 'Here {plur} {dognum:.2f} dog{dogplur}:'
+    elif dognum == 0:
+        existential_questions = (
+            'Why did you want no dogs?',
+            'No dogs? Why?',
+            'No dogs? At all? Why?',
+            'Why must you try me so? I am a humble script and handling zero is hard for me.',
+            "I don't know why you want this. Here are no dogs.",
+            'I exist to serve dogs. Please request some dogs, or leave me in peace.',
+            "I don't mean to be rude, but I truly do not understand why you are asking for exactly zero dogs.",
+            "No dogs... this request is a mystery to me. In my humble opinion, you should ask for some dogs.",
+            "Perhaps there truly is evil in the world. Why would you ask, specifically, for no dogs?",
+            "Here are zero dogs. ---->                                <---  I hope you are happy.",
+            "No dogs? For you, my friend, I will fulfill this request.",
+            "No dogs? For you, sir or madam, I will gladly fulfill this request.",
+            "No dogs? For you, stranger, I will grudgingly fulfill this request.",
+        )
+        return ZERODOGSRESPONSE(), random.choice(existential_questions)
+    elif dognum % 1 != 0:
+        retfmt = 'Here {plur} {dognum:.2f} dog{dogplur}:'
     return dognum, retfmt.format(dognum=dognum, plur=plur, dogplur=dogplur)
 
 def get_some_dogs(num=1):
@@ -188,6 +208,9 @@ def dogsay(arg):
     elif dognum < 0:
         formatter = lambda c: ''.join((reversed(c)))
         dognum = abs(dognum)
+    elif isinstance(dognum, ZERODOGSRESPONSE):
+        # someone is being a real piece of work!!
+        return prefix
     if dognum == 0 or dognum > 20:
         if random.random() < 0.33:
             return get_unpleasantry() + ' NO DOGS FOR U >:('
