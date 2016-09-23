@@ -14,7 +14,7 @@ class ZERODOGSRESPONSE(object):
     pass
 
 def get_dumdum():
-    if random.random() < 0.222:
+    if random.random() < 0.25:
         return Acro.generate_insult()
 
     dummies = ['dummy', 'idiot', 'dumdum', 'nincompoop', 'dummo', 'stinkbrain', 'dumbface', 'craphead',
@@ -44,6 +44,20 @@ def get_unpleasantry():
         ["u havin a laugh???", "I do not like your request.", "I can't read :("] * 2 +
         ["what you typed was incomprehensible to little ol' me..."]
     )
+
+def check_evalstr(evalstr):
+    badlist = (
+        'os.',
+        'sys.',
+        'inspect.',
+        're.',
+        'lambda',
+        'input',
+    )
+    for badword in badlist:
+        if badword in evalstr:
+            return False
+    return True
 
 def get_dog_fmt(reqnum):
     print repr(reqnum)
@@ -84,6 +98,7 @@ def get_dog_fmt(reqnum):
             'all': 4.20, 'every': 4.20, 'infinite': 4.20, 'infinity': 4.20, 'all the': 4.20,
             'five':5, 'several':5,
             'six':6, 'more':6,
+            'a nice amount of': 6.90, 'a good amount of': 6.90,
             'seven':7,
             'eight':8, 'a bunch':8, 'a bunch of':8, 'a buncha':8,
             'nine':9, 'a cluster of':9,
@@ -103,7 +118,9 @@ def get_dog_fmt(reqnum):
             'minus': '-', 'subtract': '-',
             'times': '*', 'multiply': '*',
             'divided by': '/', 'divide': '/', 'over': '/',
-            '^': '**', 'to the power of': '**'}
+            '^': '**', 'to the power of': '**',
+            'squared': '**2', 'cubed': '**3',
+        }
         if reqnum in eng_2_num:
             if type(eng_2_num[reqnum]) is complex:
                 dognum = -1 * eng_2_num[reqnum].imag
@@ -137,20 +154,25 @@ def get_dog_fmt(reqnum):
                 p, rep = final_rep
                 replaced = replaced.replace(p, str(rep))
             evalstr = replaced
-            if any( map(str.isalpha, evalstr) ) or '=' in evalstr:
+            if not check_evalstr(evalstr):
                 print "Invalid/not replaceable, not evaling:", reqnum, " (AKA", evalstr, ')'
-                dognum = random.randint(2,7)
-                retfmt = '{nothx} Here are {dognum:.0f} dogs, {dummy}:'
-                return dognum, retfmt.format(nothx=get_unpleasantry(), dognum=dognum, dummy=get_dumdum())
+                dognum = random.uniform(2,6)
+                retfmt = 'Nice try {dingdong}!!!!! Here are {dognum:.0f} dogs, {dummy}:'
+                return dognum, retfmt.format(dingdong=get_friend(), dognum=dognum, dummy=get_dumdum())
             else:
                 print "evaluating", evalstr
+                rv = None
                 try:
-                    dognum = float( eval(evalstr) )
+                    rv = eval(evalstr)
+                    dognum = float( rv )
                     print "dognum = ", dognum
-                except (SyntaxError, NameError, ZeroDivisionError):
+                except (SyntaxError, NameError, ZeroDivisionError, OverflowError):
                     return -1, "u are a {} and a true {}".format( get_mean_dumdum(), get_mean_dumdum() )
                 except TypeError:
                     print "Barf!", evalstr
+                    if type(rv) is complex:
+                        dognum = -1 * eng_2_num[reqnum].imag
+                        return dognum, "thanks for being difficult {dummy}, here's {dognum} imaginary dogs:".format(dognum=abs(dognum), dummy=get_mean_dumdum())
                     dognum = random.randint(2,4)
                     retfmt = "BARF. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
                     return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
