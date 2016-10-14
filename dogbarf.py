@@ -127,7 +127,7 @@ def get_dog_fmt(reqnum):
                 return dognum, "thanks for being difficult {dummy}, here's {dognum} imaginary dogs:".format(dognum=abs(dognum), dummy=get_mean_dumdum())
             dognum = float( eng_2_num[reqnum] )
         else:
-            replaced = reqnum[:]
+            replaced = reqnum.lower()
             replacements = []
             for p in operations:
                 if p in replaced:
@@ -153,6 +153,8 @@ def get_dog_fmt(reqnum):
             for final_rep in available_reps:
                 p, rep = final_rep
                 replaced = replaced.replace(p, str(rep))
+            # also do some massaging for math notation that doesn't eval like one might expect
+            replaced = re.sub(r'(\d+)!', r'math.factorial(\1)', replaced)
             evalstr = replaced
             if not check_evalstr(evalstr):
                 print "Invalid/not replaceable, not evaling:", reqnum, " (AKA", evalstr, ')'
