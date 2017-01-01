@@ -1,3 +1,4 @@
+from __future__ import division
 import random
 import math, cmath
 import inspect
@@ -14,7 +15,7 @@ class ZERODOGSRESPONSE(object):
     pass
 
 def get_dumdum():
-    if random.random() < 0.25:
+    if random.random() < 0.35:
         return Acro.generate_insult()
 
     dummies = ['dummy', 'idiot', 'dumdum', 'nincompoop', 'dummo', 'stinkbrain', 'dumbface', 'craphead',
@@ -23,12 +24,12 @@ def get_dumdum():
     
 def get_mean_dumdum():
     return random.choice(
-        ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan']
+        ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan', 'roustabout', 'nerd', "ne'erdowell"]
     )
 
 def get_friend():
     return random.choice(
-        ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'fellow dog enthusiast']
+        ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'fellow dog enthusiast', 'champ', 'tiger', 'chief', 'my good fellow']
     )
 
 def get_pleasantry():
@@ -39,9 +40,11 @@ def get_pleasantry():
 
 def get_unpleasantry():
     return random.choice(
-        ["u stink.", "hmmmmm, nah."] * 4 +
+        ["u stink.", "hmmmmm, nah."] * 3 +
         ["no that's bad.", "why u do this to me."] * 2 +
-        ["u havin a laugh???", "I do not like your request.", "I can't read :("] * 2 +
+        ["u havin a laugh???", "I do not like your request.", "I can't read :("] +
+        ["this is simply unacceptable.", "why i oughta......."] +
+        ["no! no! this will not do at all!"] + 
         ["what you typed was incomprehensible to little ol' me..."]
     )
 
@@ -95,7 +98,7 @@ def get_dog_fmt(reqnum):
             'three':3, 'a few':3,
             'pi': math.pi,
             'four':4, 'some':4,
-            'all': 4.20, 'every': 4.20, 'infinite': 4.20, 'infinity': 4.20, 'all the': 4.20,
+            'all': 4.20, 'every': 4.20, 'infinite': 4.20, 'infinity': 4.20, 'all the': 4.20, 'maximum': 4.20,
             'five':5, 'several':5,
             'six':6, 'more':6,
             'a nice amount of': 6.90, 'a good amount of': 6.90,
@@ -110,7 +113,7 @@ def get_dog_fmt(reqnum):
             'fifteen':15, 'plenty of':15,
             'sixteen':16, 'too many':16,
             'seventeen':17,
-            'eighteen':18, 'a ton of':18,
+            'eighteen':18, 'a ton of':18, 'tons of':18,
             'nineteen':19,
             'twenty':20}
         operations = {
@@ -136,7 +139,7 @@ def get_dog_fmt(reqnum):
                 if ('a '+p) in replaced:
                     print 'plonk', eng_2_num[p]
                     replacements.append( ('a ' + p, eng_2_num[p]) )
-                elif p in replaced:
+                elif re.search(r'\W' + re.escape(p), replaced):
                     print 'glonk', p, eng_2_num[p]
                     replacements.append( (p, eng_2_num[p]) )
             available_reps = replacements[:]
@@ -173,8 +176,9 @@ def get_dog_fmt(reqnum):
                 except TypeError:
                     print "Barf!", evalstr
                     if type(rv) is complex:
-                        dognum = -1 * eng_2_num[reqnum].imag
-                        return dognum, "thanks for being difficult {dummy}, here's {dognum} imaginary dogs:".format(dognum=abs(dognum), dummy=get_mean_dumdum())
+                        # to flatten to int... idk, get magnitude as polar coord.
+                        dognum = ((rv.real**2) + (rv.imag**2))**0.5
+                        return dognum, "thanks for being difficult {dummy}, here's {dognum} complex dogs:".format(dognum=dognum, dummy=get_mean_dumdum())
                     dognum = random.randint(2,4)
                     retfmt = "BARF. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
                     return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
@@ -236,7 +240,7 @@ def dogsay(arg):
         # someone is being a real piece of work!!
         return prefix
     if dognum == 0 or dognum > 20:
-        if random.random() < 0.33:
+        if random.random() < 0.35:
             return get_unpleasantry() + ' NO DOGS FOR U >:('
         else:
             return 'You are a ' + get_dumdum() + ' and u get NO DOGS >:('
