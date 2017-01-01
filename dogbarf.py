@@ -1,3 +1,4 @@
+from __future__ import division
 import random
 import math, cmath
 import inspect
@@ -9,12 +10,14 @@ _thisfile = inspect.getfile(inspect.currentframe())
 cwd = os.path.dirname(os.path.abspath(_thisfile))
 
 DOGSOURCE = os.path.join(cwd, "txt", "dogs.txt")
+GODSOURCE = os.path.join(cwd, "txt", "gods.tsv")
+
 
 class ZERODOGSRESPONSE(object):
     pass
 
 def get_dumdum():
-    if random.random() < 0.25:
+    if random.random() < 0.35:
         return Acro.generate_insult()
 
     dummies = ['dummy', 'idiot', 'dumdum', 'nincompoop', 'dummo', 'stinkbrain', 'dumbface', 'craphead',
@@ -23,12 +26,12 @@ def get_dumdum():
     
 def get_mean_dumdum():
     return random.choice(
-        ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan']
+        ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan', 'roustabout', 'nerd', "ne'erdowell"]
     )
 
 def get_friend():
     return random.choice(
-        ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'fellow dog enthusiast']
+        ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'fellow dog enthusiast', 'champ', 'tiger', 'chief', 'my good fellow']
     )
 
 def get_pleasantry():
@@ -39,9 +42,11 @@ def get_pleasantry():
 
 def get_unpleasantry():
     return random.choice(
-        ["u stink.", "hmmmmm, nah."] * 4 +
+        ["u stink.", "hmmmmm, nah."] * 3 +
         ["no that's bad.", "why u do this to me."] * 2 +
-        ["u havin a laugh???", "I do not like your request.", "I can't read :("] * 2 +
+        ["u havin a laugh???", "I do not like your request.", "I can't read :("] +
+        ["this is simply unacceptable.", "why i oughta......."] +
+        ["no! no! this will not do at all!"] + 
         ["what you typed was incomprehensible to little ol' me..."]
     )
 
@@ -95,7 +100,7 @@ def get_dog_fmt(reqnum):
             'three':3, 'a few':3,
             'pi': math.pi,
             'four':4, 'some':4,
-            'all': 4.20, 'every': 4.20, 'infinite': 4.20, 'infinity': 4.20, 'all the': 4.20,
+            'all': 4.20, 'every': 4.20, 'infinite': 4.20, 'infinity': 4.20, 'all the': 4.20, 'maximum': 4.20,
             'five':5, 'several':5,
             'six':6, 'more':6,
             'a nice amount of': 6.90, 'a good amount of': 6.90,
@@ -110,7 +115,7 @@ def get_dog_fmt(reqnum):
             'fifteen':15, 'plenty of':15,
             'sixteen':16, 'too many':16,
             'seventeen':17,
-            'eighteen':18, 'a ton of':18,
+            'eighteen':18, 'a ton of':18, 'tons of':18,
             'nineteen':19,
             'twenty':20}
         operations = {
@@ -136,7 +141,7 @@ def get_dog_fmt(reqnum):
                 if ('a '+p) in replaced:
                     print 'plonk', eng_2_num[p]
                     replacements.append( ('a ' + p, eng_2_num[p]) )
-                elif p in replaced:
+                elif re.search(r'\W' + re.escape(p), replaced):
                     print 'glonk', p, eng_2_num[p]
                     replacements.append( (p, eng_2_num[p]) )
             available_reps = replacements[:]
@@ -173,8 +178,9 @@ def get_dog_fmt(reqnum):
                 except TypeError:
                     print "Barf!", evalstr
                     if type(rv) is complex:
-                        dognum = -1 * eng_2_num[reqnum].imag
-                        return dognum, "thanks for being difficult {dummy}, here's {dognum} imaginary dogs:".format(dognum=abs(dognum), dummy=get_mean_dumdum())
+                        # to flatten to int... idk, get magnitude as polar coord.
+                        dognum = ((rv.real**2) + (rv.imag**2))**0.5
+                        return dognum, "thanks for being difficult {dummy}, here's {dognum} complex dogs:".format(dognum=dognum, dummy=get_mean_dumdum())
                     dognum = random.randint(2,4)
                     retfmt = "BARF. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
                     return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
@@ -214,35 +220,89 @@ def get_some_dogs(num=1):
     for dog_choice in dog_selections:
         yield dogs[dog_choice].strip()
 
+def get_some_gods(num=1):
+    import codecs
+    with codecs.open(GODSOURCE, 'r', 'utf-8') as godf:
+        gods = godf.readlines()
+    god_selections = random.sample( gods, num )
+
+    naive_str = u'\n'.join(god_selections)
+    naive_strlen = len(naive_str)
+    rels = list()
+    names = list()
+    infos = list()
+    for m in re.finditer(r"^([^\t]+?)\t([^\t\n]+)\t?(.*)$", naive_str, re.MULTILINE):
+        rels.append( m.group(1).strip() )
+        names.append( m.group(2).strip() )
+        infos.append( m.group(3).strip() )
+
+    basic_len = sum(map(len, rels + names))
+    info_len = sum(map(len, infos))
+    be_concise = (num > 4 and info_len > 300) or (naive_strlen >= 400)  # 510 is irc max limit
+    allowed_info_c = 460 - (num * 7) - basic_len  # *7 for bold/ital chrs, etc.
+
+    for religion, god_name, extra_info in zip(rels, names, infos):
+        if be_concise:
+            room_for_info = 1.0 - (len(extra_info) / abs(allowed_info_c))
+        else:
+            room_for_info = (allowed_info_c - len(extra_info)) / allowed_info_c
+
+        if random.random() < room_for_info:
+            yield religion, god_name, extra_info
+            allowed_info_c -= len(extra_info)
+        else:
+            yield religion, god_name, ''
+    return
+
+def make_godstring(arg):
+    religion, god, info = arg
+    retstr = u"{godname} ({religion})".format(godname=god, religion=religion)
+    if info:
+        retstr += u' - {info}'.format(info=info)
+    return retstr
+
 def dogsay(arg):
     import string
+    godmode = False
     arg = filter(lambda c: c in string.printable, arg)
-    re_arg = re.search(r"\s*(.+?)\s+dog", arg)
+    re_arg = re.search(r"\s*(.+?)\s+(dog|god)", arg)
     if re_arg:
-        print "blao"
         new_arg = re_arg.group(1)
+        if re_arg.group(2) == 'god':
+            godmode = True
     else:
         # taking a guess
         new_arg = arg.replace('dogs', '').replace('dog', '').strip()
     print "arg=", new_arg
     dognum, prefix = get_dog_fmt(new_arg)
-    formatter = lambda c: c
+
+    base_formatter = lambda c: c
+    if godmode:
+        prefix = prefix.replace('dog', 'god')
+        base_formatter = make_godstring
+    formatter = base_formatter
+
     if dognum < 0 and 'u are a' in prefix:
         return prefix + " >:(!!!!"  # we are very cross now
     elif dognum < 0:
-        formatter = lambda c: ''.join((reversed(c)))
+        formatter = lambda c: ''.join((reversed(base_formatter(c))))
         dognum = abs(dognum)
     elif isinstance(dognum, ZERODOGSRESPONSE):
         # someone is being a real piece of work!!
         return prefix
     if dognum == 0 or dognum > 20:
-        if random.random() < 0.33:
-            return get_unpleasantry() + ' NO DOGS FOR U >:('
+        things = 'GODS' if godmode else 'DOGS'
+        if random.random() < 0.35:
+            return get_unpleasantry() + ' NO ' + things + ' FOR U >:('
         else:
-            return 'You are a ' + get_dumdum() + ' and u get NO DOGS >:('
+            return 'You are a ' + get_dumdum() + ' and u get NO ' + things + ' >:('
 
-    dog_getter = get_some_dogs(int(math.ceil(dognum)))
-    get_dog = dog_getter.next
+    if godmode:
+        dog_getter = get_some_gods(int(math.ceil(dognum)))
+        get_dog = dog_getter.next
+    else:
+        dog_getter = get_some_dogs(int(math.ceil(dognum)))
+        get_dog = dog_getter.next
 
     s = prefix + ' '
     i = dognum
