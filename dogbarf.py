@@ -11,6 +11,7 @@ cwd = os.path.dirname(os.path.abspath(_thisfile))
 
 DOGSOURCE = os.path.join(cwd, "txt", "dogs.txt")
 GODSOURCE = os.path.join(cwd, "txt", "gods.tsv")
+g_includeReligions = False
 
 
 class ZERODOGSRESPONSE(object):
@@ -20,18 +21,19 @@ def get_dumdum():
     if random.random() < 0.35:
         return Acro.generate_insult()
 
-    dummies = ['dummy', 'idiot', 'dumdum', 'nincompoop', 'dummo', 'stinkbrain', 'dumbface', 'craphead',
+    dummies = ['dummy', 'idiot', 'dumdum', 'nincompoop', 'dummo', 'stinkbrain', 'dumbface', 'craphead', 'nerd',
                'jerk', 'ya putz', 'dumbbell', 'loser', 'moron', 'Punky Brewster', 'fuckbarn', 'jabroni']
     return random.choice(dummies)
     
 def get_mean_dumdum():
     return random.choice(
-        ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan', 'roustabout', 'nerd', "ne'erdowell"]
+        ['fucker', 'scoundrel', 'bastard', 'devil', 'bad person', 'Jerk', 'cad', 'charlatan', 'roustabout', 'nerd', "ne'erdowell", 'scamp']
     )
 
 def get_friend():
     return random.choice(
-        ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'fellow dog enthusiast', 'champ', 'tiger', 'chief', 'my good fellow']
+        ['friend', 'pal', 'buddy', 'chum', 'fella', 'my friend', 'my good fellow'] * 2 +
+        ['fellow dog enthusiast', 'champ', 'tiger', 'chief', 'you good good dog boy']
     )
 
 def get_pleasantry():
@@ -78,8 +80,8 @@ def get_dog_fmt(reqnum):
             if dognum == 1:
                 plur = 'is'
                 dogplur = ''
-            retfmt = 'Here {plur} {dognum:.0f} dog{dogplur}, {dummy}:'
-            return dognum, retfmt.format(dognum=dognum, dummy=get_friend(), plur=plur, dogplur=dogplur)
+            retfmt = 'Here {plur} {dognum:.0f} dog{dogplur}, {friend}:'
+            return dognum, retfmt.format(dognum=dognum, friend=get_friend(), plur=plur, dogplur=dogplur)
         eng_2_num = {
             'e^i*pi': -1, 'e^pi*i': -1, 'e^(i*pi)': -1, 'e^(pi*i)': -1, 'e**i*pi': -1, 'e**pi*i':-1, 'e**(i*pi)': -1, 'e**(pi*i)': -1,
             'i': cmath.sqrt(-1),
@@ -129,7 +131,7 @@ def get_dog_fmt(reqnum):
         if reqnum in eng_2_num:
             if type(eng_2_num[reqnum]) is complex:
                 dognum = -1 * eng_2_num[reqnum].imag
-                return dognum, "thanks for being difficult {dummy}, here's {dognum} imaginary dogs:".format(dognum=abs(dognum), dummy=get_mean_dumdum())
+                return dognum, "thanks for being difficult {dummy}, here's {dognum} imaginary dogs:".format(dognum=abs(dognum), dummy=get_dumdum())
             dognum = float( eng_2_num[reqnum] )
         else:
             replaced = reqnum.lower()
@@ -165,7 +167,7 @@ def get_dog_fmt(reqnum):
                 print "Invalid/not replaceable, not evaling:", reqnum, " (AKA", evalstr, ')'
                 dognum = random.uniform(2,6)
                 retfmt = 'Nice try {dingdong}!!!!! Here are {dognum:.0f} dogs, {dummy}:'
-                return dognum, retfmt.format(dingdong=get_friend(), dognum=dognum, dummy=get_dumdum())
+                return dognum, retfmt.format(dingdong=get_friend(), dognum=dognum, dummy=get_mean_dumdum())
             else:
                 print "evaluating", evalstr
                 rv = None
@@ -174,13 +176,13 @@ def get_dog_fmt(reqnum):
                     dognum = float( rv )
                     print "dognum = ", dognum
                 except (SyntaxError, NameError, ZeroDivisionError, OverflowError):
-                    return -1, "u are a {} and a true {}".format( get_mean_dumdum(), get_mean_dumdum() )
+                    return -1, "u are a {} and a true {}".format( get_dumdum(), get_mean_dumdum() )
                 except TypeError:
                     print "Barf!", evalstr
                     if type(rv) is complex:
                         # to flatten to int... idk, get magnitude as polar coord.
                         dognum = ((rv.real**2) + (rv.imag**2))**0.5
-                        return dognum, "thanks for being difficult {dummy}, here's {dognum} complex dogs:".format(dognum=dognum, dummy=get_mean_dumdum())
+                        return dognum, "thanks for being difficult {dummy}, here's {dognum} complex dogs:".format(dognum=dognum, dummy=get_dumdum())
                     dognum = random.randint(2,4)
                     retfmt = "BARF. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
                     return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
@@ -188,7 +190,7 @@ def get_dog_fmt(reqnum):
                     print "waaaahhhh"
                     dognum = random.randint(2,6)
                     retfmt = "FINE. I can't evaluate `{evalstr}`. So here are {dognum:.0f} dogs, {dummy}:"
-                    return dognum, retfmt.format(dognum=dognum, dummy=get_dumdum(), evalstr=evalstr)
+                    return dognum, retfmt.format(dognum=dognum, dummy=get_mean_dumdum(), evalstr=evalstr)
     if dognum == 1:
         plur = 'is'
         dogplur = ''
@@ -236,9 +238,15 @@ def get_some_gods(num=1):
         names.append( m.group(2).strip() )
         infos.append( m.group(3).strip() )
 
-    basic_len = sum(map(len, rels + names))
     info_len = sum(map(len, infos))
-    be_concise = (num > 4 and info_len > 300) or (naive_strlen >= 400)  # 510 is irc max limit
+    no_rels_strlen = sum(map(len, names + infos))
+    if g_includeReligions:
+        limit_strlen = naive_strlen
+        basic_len = sum(map(len, rels + names))
+    else:
+        limit_strlen = no_rels_strlen
+        basic_len = sum(map(len, names))
+    be_concise = (num > 4 and info_len > 300) or (limit_strlen >= 400)  # 510 is irc max limit
     allowed_info_c = 460 - (num * 7) - basic_len  # *7 for bold/ital chrs, etc.
 
     for religion, god_name, extra_info in zip(rels, names, infos):
@@ -256,12 +264,20 @@ def get_some_gods(num=1):
 
 def make_godstring(arg):
     religion, god, info = arg
-    retstr = u"{godname} ({religion})".format(godname=god, religion=religion)
+    if g_includeReligions:
+        retstr = u"{godname}".format( godname=god )
+    else:
+        retstr = u"{godname}".format(godname=god)
+
     if info:
         retstr += u' - {info}'.format(info=info)
+
+    if g_includeReligions:
+        retstr += u' ({religion})'.format(religion=religion)
     return retstr
 
 def dogsay(arg):
+    global g_includeReligions
     import string
     godmode = False
     arg = filter(lambda c: c in string.printable, arg)
@@ -276,26 +292,43 @@ def dogsay(arg):
     print "arg=", new_arg
     dognum, prefix = get_dog_fmt(new_arg)
 
+    politeness_enabled = 'please' in arg.lower()
+    g_includeReligions |= politeness_enabled
+    polite_tag = ' %s, %s!' % (get_pleasantry( ), get_friend( ))
+
     base_formatter = lambda c: c
     if godmode:
         prefix = prefix.replace('dog', 'god')
+        polite_tag = polite_tag.replace('dog', 'god')
         base_formatter = make_godstring
     formatter = base_formatter
 
     if dognum < 0 and 'u are a' in prefix:
-        return prefix + " >:(!!!!"  # we are very cross now
+        if politeness_enabled:
+            return prefix + ", " + get_friend() + "!!!!"
+        else:
+            return prefix + " >:(!!!!"  # we are very cross now
     elif dognum < 0:
         formatter = lambda c: ''.join((reversed(base_formatter(c))))
         dognum = abs(dognum)
     elif isinstance(dognum, ZERODOGSRESPONSE):
         # someone is being a real piece of work!!
+        if politeness_enabled:
+            prefix += ' %s, %s!' % (get_pleasantry(), get_friend())
         return prefix
     if dognum == 0 or dognum > 20:
         things = 'GODS' if godmode else 'DOGS'
-        if random.random() < 0.35:
-            return get_unpleasantry() + ' NO ' + things + ' FOR U >:('
+        face = ':/' if politeness_enabled else '>:('
+        spin = random.random()
+        if politeness_enabled: spin -= 0.12345  # make polite option below more likely
+        if spin < 0.0271828:
+            return 'u should reconsider your behavior... i know you can do better, {guy}'.format(guy=get_friend())
+        elif spin < 0.55:
+            return '{nope} NO {thing} FOR U {face}'.format(nope=get_unpleasantry(), thing=things, face=face)
+        elif spin < 0.6:
+            return '{nope} THERE WILL BE NO {thing} FOR {jerk}S LIKE U {face}'.format(nope=get_unpleasantry().upper(), jerk=get_dumdum().upper(), thing=things, face=face)
         else:
-            return 'You are a ' + get_dumdum() + ' and u get NO ' + things + ' >:('
+            return 'You are a {jerk} and u get NO {things} {face}'.format(jerk=get_dumdum(), things=things, face=face)
 
     if godmode:
         dog_getter = get_some_gods(int(math.ceil(dognum)))
@@ -320,8 +353,8 @@ def dogsay(arg):
         d_pct = int(i * len(last_dog))
         rev_chr = ''
         s += last_dog[:d_pct] + rev_chr + last_dog[d_pct:] + rev_chr + '.'
-    if 'please' in arg.lower():
-        s += ' %s, %s!' % (get_pleasantry(), get_friend())
+    if politeness_enabled:
+        s += polite_tag
     return s
 
 def serve_dogbarf(arg):
