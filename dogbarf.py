@@ -1,8 +1,9 @@
 from __future__ import division
-import random
+import codecs
 import math, cmath
 import inspect
 import os, sys
+import random
 import re
 from acrobot import Acro
 
@@ -82,6 +83,14 @@ def get_dog_fmt(reqnum):
                 dogplur = ''
             retfmt = 'Here {plur} {dognum:.0f} dog{dogplur}, {friend}:'
             return dognum, retfmt.format(dognum=dognum, friend=get_friend(), plur=plur, dogplur=dogplur)
+        if reqnum.lower() in ('im', "i'm", "i am"):
+            if random.random() < 0.13:
+                return ZERODOGSRESPONSE(), random.choice(["no I'M dogs.", "No, **I'M** dogs.", "no... i'm dogs"])
+            return ZERODOGSRESPONSE(), '{ok} {ur} dogs.'.format(
+                ok=random.choice(['', 'OK,', 'ok,', 'ok', 'ok...', 'ya,', 'Yes,', 'k', 'k...', 'k.']),
+                ur=random.choice(['ur', 'ur', 'ur', 'you are', 'your', "you're", 'u r', "u're", "you ARE"])
+            ).strip()
+
         eng_2_num = {
             'e^i*pi': -1, 'e^pi*i': -1, 'e^(i*pi)': -1, 'e^(pi*i)': -1, 'e**i*pi': -1, 'e**pi*i':-1, 'e**(i*pi)': -1, 'e**(pi*i)': -1,
             'i': cmath.sqrt(-1),
@@ -143,9 +152,11 @@ def get_dog_fmt(reqnum):
                 if ('a '+p) in replaced:
                     print 'plonk', eng_2_num[p]
                     replacements.append( ('a ' + p, eng_2_num[p]) )
-                elif re.search(r'\W' + re.escape(p), replaced):
+                elif re.search(r'(?:^|\W)' + re.escape(p), replaced):
                     print 'glonk', p, eng_2_num[p]
-                    replacements.append( (p, eng_2_num[p]) )
+                    for match in re.finditer(r'(^|\W)' + re.escape(p), replaced):
+                        orig_str = match.group(1) + p
+                        replacements.append( (orig_str, eng_2_num[p]) )
             available_reps = replacements[:]
             for rep1 in replacements:
                 p1, r1 = rep1
@@ -223,7 +234,6 @@ def get_some_dogs(num=1):
         yield dogs[dog_choice].strip()
 
 def get_some_gods(num=1):
-    import codecs
     with codecs.open(GODSOURCE, 'r', 'utf-8') as godf:
         gods = godf.readlines()
     god_selections = random.sample( gods, num )
@@ -366,8 +376,10 @@ def serve_dogbarf(arg):
         os.unlink(dogbarf_file)
     if not os.path.exists(r'C:\tmp'):
         os.makedirs(r'C:\tmp')
-    with open(dogbarf_file, 'w+') as dogf:
+    #with open(dogbarf_file, 'w+') as dogf:
+    with codecs.open(dogbarf_file, 'w+', 'utf-8') as dogf:
         dogf.write(data.rstrip())
+    print data
     return True
 
 if __name__ == "__main__":
