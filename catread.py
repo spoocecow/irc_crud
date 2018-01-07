@@ -46,7 +46,7 @@ def format_lines(msg, maxwidth=WIDTH):
         linelen = maxwidth
     else:
         linelen = (len(msg) / lineno) * 1.25  # allow for some wiggle room
-    lines = ['']
+    lines = [u'']
     raw_words = msg.split()
     words = []
     for w in raw_words:
@@ -59,9 +59,9 @@ def format_lines(msg, maxwidth=WIDTH):
             words.append(w)
     for w in words:
         if (len(lines[-1]) + 1 +  len(w)) > linelen:
-            lines.append('')
-        lines[-1] += ' ' + w
-    return map(str.strip, lines)
+            lines.append(u'')
+        lines[-1] += u' ' + w
+    return map(unicode.strip, lines)
 
 
 
