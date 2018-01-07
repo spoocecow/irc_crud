@@ -1,4 +1,6 @@
 # coding=utf-8
+from __future__ import division
+import math
 import random
 import re
 import os, sys
@@ -18,29 +20,8 @@ WIDTH = 59
 g_nickBlacklist = ['Colliwobble']
 g_wordBlacklist = ['Klungo', '!logread', '!joke', '']
 
-def format_lines_old(msg, maxwidth=80):
-   lines = []
-   width = min(maxwidth, len(msg))
-   current_line = ''
-   for word in msg.split():
-      if len(current_line) + len(word) <= width:
-         current_line += word + ' '
-      elif len(word) > (WIDTH/2):  # long spammy line, go ahead and split
-         rem = width - len(current_line)
-         while len(word) > rem:
-            current_line += word[:rem]
-            lines.append( current_line.strip() )
-            word = word[rem:]
-            current_line = ''
-            rem = width
-         current_line = word + ' '
-      else:
-         lines.append( current_line.strip() )
-         current_line = word + ' '
-   lines.append(current_line)
-   return lines
 
-def format_lines(msg, maxwidth=WIDTH):
+def format_lines_old(msg, maxwidth=WIDTH):
     lines = ['']
     line_num = len(msg) / maxwidth
     wordos = msg.split()
@@ -57,6 +38,31 @@ def format_lines(msg, maxwidth=WIDTH):
         word = words.pop(0)
         lines[-1] += word + ' '
     return map(str.strip, lines)
+
+
+def format_lines(msg, maxwidth=WIDTH):
+    lineno = math.ceil(len(msg) / maxwidth)
+    if lineno >= 4:
+        linelen = maxwidth
+    else:
+        linelen = (len(msg) / lineno) * 1.25  # allow for some wiggle room
+    lines = ['']
+    raw_words = msg.split()
+    words = []
+    for w in raw_words:
+        max_word_width = linelen / 2
+        if False:
+        #if len(w) > max_word_width:
+            # split long spammy words
+            words.extend( [w[:max_word_width], w[max_word_width:] ] )
+        else:
+            words.append(w)
+    for w in words:
+        if (len(lines[-1]) + 1 +  len(w)) > linelen:
+            lines.append('')
+        lines[-1] += ' ' + w
+    return map(str.strip, lines)
+
 
 
 def catsay(msg, nick='A Cat', date=''):
