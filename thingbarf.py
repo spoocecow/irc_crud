@@ -11,6 +11,8 @@ from acrobot import Acro
 
 _thisfile = inspect.getfile( inspect.currentframe() )
 cwd = os.path.dirname( os.path.abspath( _thisfile ) )
+# https://github.com/dariusk/corpora
+corpora_wd = os.path.join(cwd, '..', 'corpora', 'data')
 
 g_verbose = False
 
@@ -323,6 +325,70 @@ def get_some_sandwiches(num=1):
             yield u'%s' % sd['name']
 
 
+def get_simple_json(path, entry):
+    with open(path) as f:
+        data = f.read()
+    items = json.loads(data)[entry]
+    random.shuffle(items)
+    for item in items:
+        yield item
+
+
+def get_some_foods(num=1):  return get_simple_json(path=os.path.join(corpora_wd, 'foods', 'menuItems.json'), entry='menuItems')
+
+
+def get_some_apples(num=1):
+    return get_simple_json(path=os.path.join(corpora_wd, 'foods', 'apple_cultivars.json'), entry='cultivars')
+
+
+def get_some_horses(num=1):
+    return get_simple_json( path=os.path.join(corpora_wd, 'animals', 'horses.json' ), entry='horses' )
+
+
+def get_some_dinosaurs(num=1):
+    return get_simple_json( path=os.path.join(corpora_wd, 'animals', 'dinosaurs.json' ), entry='dinosaurs' )
+
+
+def get_some_cats(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'animals', 'cats.json' ), entry='cats' )
+
+def get_some_birds(num=1):
+    path = os.path.join( corpora_wd, 'animals', 'birds_north_america.json' )
+    with open(path) as f:
+        data = f.read()
+    items = json.loads(data)['birds']
+    birbs = []
+    for item in items:
+        family = item['family']
+        for member in item['members']:
+            birbs.append( (member, family) )
+    random.shuffle(birbs)
+    for entry in birbs:
+        birb, family = entry
+        if g_verbose:
+            yield u'{name} ({fam})'.format(name=birb, fam=family)
+        else:
+            yield birb
+
+
+def get_some_pokemon(num=1):
+    for entry in get_simple_json(path=os.path.join(corpora_wd, 'games', 'pokemon.json'), entry='pokemon'):
+        yield entry['name']
+
+
+def get_some_elements(num=1):
+    for entry in get_simple_json(path=os.path.join(corpora_wd, 'science', 'elements.json'), entry='elements'):
+        yield entry['name']
+
+
+def get_some_cities(num=1):
+    for entry in get_simple_json(path=os.path.join(corpora_wd, 'geography', 'us_cities.json'), entry='cities'):
+        if g_verbose:
+            yield u'{city}, {state} (pop. {population})'.format(**entry)
+        else:
+            yield u'{city}, {state}'.format(**entry)
+
+
 def thingsay(arg):
     """
     :param str arg:
@@ -383,6 +449,15 @@ def thingsay(arg):
         'dogs': get_some_dogs,
         'gods': get_some_gods,
         'sandwiches': get_some_sandwiches,
+        'foods': get_some_foods,
+        'apples': get_some_apples,
+        'horses': get_some_horses,
+        'dinosaurs': get_some_dinosaurs,
+        'cats': get_some_cats,
+        'birds': get_some_birds,
+        'pokemon': get_some_pokemon,
+        'elements': get_some_elements,
+        'cities': get_some_cities,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
@@ -392,7 +467,7 @@ def thingsay(arg):
                 continue
             g = nd[k]
             it = g.next()
-            yield u'{s} ({thing})'.format(s=it, thing=k)
+            yield u'{s} ({thing})'.format(s=it, thing=k)
     thing_map['things'] = rando
     if things in thing_map:
         getter = thing_map[things]
