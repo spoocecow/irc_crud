@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import division
 import codecs
 import math, cmath
@@ -53,6 +54,16 @@ def get_unpleasantry():
         ["what you typed was incomprehensible to little ol' me..."]
     )
 
+def get_dog_overflow_exception(things):
+    return random.choice(
+        ["that's too many {things}", "Too many {things}!", "Way too many {things}!"] * 2 +
+        ["That's too much! You're too greedy for {things}!",
+         "ALERT: {things} overflow exception. ur in trouble bud.",
+         "oh my gosh that's so many {things}. cool it, hombre.",
+         "That's too many {things} and you KNOW it. For shame.",
+         "cool it with all the {things}... yikes."]
+    ).format(things=things)
+
 def check_evalstr(evalstr):
     badlist = (
         'os.',
@@ -85,7 +96,7 @@ def get_dog_fmt(reqnum):
             return dognum, retfmt.format(dognum=dognum, friend=get_friend(), plur=plur, dogplur=dogplur)
         if reqnum.lower() in ('im', "i'm", "i am"):
             if random.random() < 0.13:
-                return ZERODOGSRESPONSE(), random.choice(["no I'M dogs.", "No, **I'M** dogs.", "no... i'm dogs"])
+                return ZERODOGSRESPONSE(), random.choice(["no I'M dogs", "No, **I'M** dogs", "no... i'm dogs"]) + random.choice(['', '.'])
             return ZERODOGSRESPONSE(), '{ok} {ur} dogs.'.format(
                 ok=random.choice(['', 'OK,', 'ok,', 'ok', 'ok...', 'ya,', 'Yes,', 'k', 'k...', 'k.']),
                 ur=random.choice(['ur', 'ur', 'ur', 'you are', 'your', "you're", 'u r', "u're", "you ARE"])
@@ -109,7 +120,7 @@ def get_dog_fmt(reqnum):
             'not many': 2.5,
             'e': math.e,
             'three':3, 'a few':3,
-            'pi': math.pi,
+            'pi': math.pi, 'π': math.pi,
             'four':4, 'some':4,
             'all': 4.20, 'every': 4.20, 'infinite': 4.20, 'infinity': 4.20, 'all the': 4.20, 'maximum': 4.20,
             'five':5, 'several':5,
@@ -135,7 +146,8 @@ def get_dog_fmt(reqnum):
             'times': '*', 'multiply': '*',
             'divided by': '/', 'divide': '/', 'over': '/',
             '^': '**', 'to the power of': '**',
-            'squared': '**2', 'cubed': '**3',
+            'squared': '**2', '²': '**2',
+            'cubed': '**3', '³': '**3'
         }
         if reqnum in eng_2_num:
             if type(eng_2_num[reqnum]) is complex:
@@ -155,8 +167,8 @@ def get_dog_fmt(reqnum):
                 elif re.search(r'(?:^|\W)' + re.escape(p), replaced):
                     print 'glonk', p, eng_2_num[p]
                     for match in re.finditer(r'(^|\W)' + re.escape(p), replaced):
-                        orig_str = match.group(1) + p
-                        replacements.append( (orig_str, eng_2_num[p]) )
+                        orig_chr = match.group(1)
+                        replacements.append( (orig_chr + p, orig_chr + str(eng_2_num[p])) )
             available_reps = replacements[:]
             for rep1 in replacements:
                 p1, r1 = rep1
@@ -287,6 +299,9 @@ def make_godstring(arg):
     return retstr
 
 def dogsay(arg):
+    """
+    :param str arg:
+    """
     global g_includeReligions
     import string
     godmode = False
@@ -327,18 +342,21 @@ def dogsay(arg):
             prefix += ' %s, %s!' % (get_pleasantry(), get_friend())
         return prefix
     if dognum == 0 or dognum > 20:
-        things = 'GODS' if godmode else 'DOGS'
+        things = 'gods' if godmode else 'dogs'
         face = ':/' if politeness_enabled else '>:('
+        nope = get_unpleasantry()
+        if dognum > 20 and random.random() < 0.6:
+            nope = get_dog_overflow_exception(things)
         spin = random.random()
         if politeness_enabled: spin -= 0.12345  # make polite option below more likely
         if spin < 0.0271828:
             return 'u should reconsider your behavior... i know you can do better, {guy}'.format(guy=get_friend())
         elif spin < 0.55:
-            return '{nope} NO {thing} FOR U {face}'.format(nope=get_unpleasantry(), thing=things, face=face)
+            return '{nope} NO {thing} FOR U {face}'.format(nope=nope, thing=things.upper(), face=face)
         elif spin < 0.6:
-            return '{nope} THERE WILL BE NO {thing} FOR {jerk}S LIKE U {face}'.format(nope=get_unpleasantry().upper(), jerk=get_dumdum().upper(), thing=things, face=face)
+            return '{nope} THERE WILL BE NO {thing} FOR {jerk}S LIKE U {face}'.format(nope=nope.upper(), jerk=get_dumdum().upper(), thing=things.upper(), face=face)
         else:
-            return 'You are a {jerk} and u get NO {things} {face}'.format(jerk=get_dumdum(), things=things, face=face)
+            return 'You are a {jerk} and u get NO {things} {face}'.format(jerk=get_dumdum(), things=things.upper(), face=face)
 
     if godmode:
         dog_getter = get_some_gods(int(math.ceil(dognum)))
