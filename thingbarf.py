@@ -334,7 +334,8 @@ def get_simple_json(path, entry):
         yield item
 
 
-def get_some_foods(num=1):  return get_simple_json(path=os.path.join(corpora_wd, 'foods', 'menuItems.json'), entry='menuItems')
+def get_some_foods(num=1):
+    return get_simple_json(path=os.path.join(corpora_wd, 'foods', 'menuItems.json'), entry='menuItems')
 
 
 def get_some_apples(num=1):
@@ -389,6 +390,30 @@ def get_some_cities(num=1):
             yield u'{city}, {state}'.format(**entry)
 
 
+def get_some_colors(num=1):
+    for entry in get_simple_json(path=os.path.join(corpora_wd, 'colors', 'crayola.json'), entry='colors'):
+        if g_verbose:
+            yield u'{color} ({hex})'.format(**entry)
+        else:
+            yield u'{color}'.format(**entry)
+
+def get_some_celebs(num=1):
+    return get_simple_json(path=os.path.join(corpora_wd, 'humans', 'celebrities.json'), entry='celebrities')
+
+def get_some_moods(num=1):
+    return get_simple_json(path=os.path.join(corpora_wd, 'humans', 'moods.json'), entry='moods')
+
+def get_some_objects(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'objects', 'objects.json' ), entry='objects' )
+
+def get_some_plants(num=1):
+    for entry in get_simple_json(path=os.path.join(corpora_wd, 'plants', 'plants.json'), entry='instruments'):  # ...instruments? OK
+        if g_verbose:
+            yield u'{name} ({species})'.format(**entry)
+        else:
+            yield u'{name}'.format(**entry)
+
+
 def thingsay(arg):
     """
     :param str arg:
@@ -397,6 +422,9 @@ def thingsay(arg):
     import string
     arg = ''.join( filter( lambda c: c in string.printable, arg ) )
     re_arg = re.search( r"\s*(.+?)\s+(\w+)", arg )
+    if not re_arg:
+        # just bomb out, we might have been overzealous in triggering from IRC
+        return
     num = re_arg.group(1)
     things = re_arg.group(2)
     thingnum, fmt_str = get_thing_fmt( num )
@@ -404,7 +432,7 @@ def thingsay(arg):
 
     politeness_enabled = 'please' in arg.lower()
     g_verbose |= politeness_enabled
-    polite_tag = ' %s, %s!' % (get_pleasantry(), get_friend())
+    polite_tag = ' %s, %s!' % (get_pleasantry(), get_friend().format(thing=things))
 
     if thingnum == 0 or thingnum > 20:
         face = ':/' if politeness_enabled else '>:('
@@ -433,16 +461,16 @@ def thingsay(arg):
 
     if thingnum < 0 and 'u are a' in printout:
         if politeness_enabled:
-            return printout + ", " + get_friend() + "!!!!"
+            return printout + ", " + get_friend().format(thing=things) + "!!!!"
         else:
             return printout + " >:(!!!!"  # we are very cross now
     elif thingnum < 0:
-        formatter = lambda c: ''.join( (reversed( base_formatter( c ) )) )
+        formatter = lambda c: ''.join( (reversed( base_formatter( c ) )) ).replace('(', '\x00').replace(')', '(').replace('\x00', ')')
         thingnum = abs( thingnum )
     elif isinstance( thingnum, ZEROTHINGSRESPONSE ):
         # someone is being a real piece of work!!
         if politeness_enabled:
-            printout += ' %s, %s!' % (get_pleasantry(), get_friend())
+            printout += ' %s, %s!' % (get_pleasantry(), get_friend().format(thing=things))
         return printout
 
     thing_map = {
@@ -458,6 +486,11 @@ def thingsay(arg):
         'pokemon': get_some_pokemon,
         'elements': get_some_elements,
         'cities': get_some_cities,
+        'colors': get_some_colors,
+        'celebrities': get_some_celebs,
+        'moods': get_some_moods,
+        'objects': get_some_objects,
+        'plants': get_some_plants,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
