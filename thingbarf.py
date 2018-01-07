@@ -257,6 +257,20 @@ def get_some_dogs(num=1):
         yield dogs[dog_choice].strip()
 
 
+def make_godstring(religion='', god='', info=''):
+    if g_verbose:
+        retstr = u"{godname}".format( godname=god )
+    else:
+        retstr = u"{godname}".format( godname=god )
+
+    if info:
+        retstr += u' - {info}'.format( info=info )
+
+    if g_verbose:
+        retstr += u' ({religion})'.format( religion=religion )
+    return retstr
+
+
 def get_some_gods(num=1):
     with codecs.open( os.path.join(cwd, "txt", "gods.tsv"), 'r', 'utf-8' ) as godf:
         gods = godf.readlines()
@@ -290,29 +304,23 @@ def get_some_gods(num=1):
             room_for_info = (allowed_info_c - len( extra_info )) / allowed_info_c
 
         if random.random() < room_for_info:
-            yield religion, god_name, extra_info
+            yield make_godstring(religion, god_name, extra_info)
             allowed_info_c -= len( extra_info )
         else:
-            yield religion, god_name, ''
+            yield make_godstring(religion, god_name)
     return
 
 
 def get_some_sandwiches(num=1):
-
-
-def make_godstring(arg):
-    religion, god, info = arg
-    if g_verbose:
-        retstr = u"{godname}".format( godname=god )
-    else:
-        retstr = u"{godname}".format( godname=god )
-
-    if info:
-        retstr += u' - {info}'.format( info=info )
-
-    if g_verbose:
-        retstr += u' ({religion})'.format( religion=religion )
-    return retstr
+    with open(os.path.join(cwd, '..', 'corpora', 'data', 'foods', 'sandwiches.json')) as sandwiches_f:
+        sandwiches_t = sandwiches_f.read()
+    sandwiches = json.loads(sandwiches_t)['sandwiches']
+    random.shuffle(sandwiches)
+    for sd in sandwiches:
+        if g_verbose:
+            yield u'{name}: {desc}'.format(name=sd['name'], desc=sd['description'])
+        else:
+            yield u'%s' % sd['name']
 
 
 def thingsay(arg):
@@ -322,18 +330,17 @@ def thingsay(arg):
     global g_verbose
     import string
     arg = ''.join( filter( lambda c: c in string.printable, arg ) )
-    re_arg = re.search( r"\s*(.+?)\s+(\w+)s?", arg )
+    re_arg = re.search( r"\s*(.+?)\s+(\w+)", arg )
     num = re_arg.group(1)
-    thing = re_arg.group(2)
+    things = re_arg.group(2)
     thingnum, fmt_str = get_thing_fmt( num )
-    printout = fmt_str.format(thing=thing)
+    printout = fmt_str.format(things=things)
 
     politeness_enabled = 'please' in arg.lower()
     g_verbose |= politeness_enabled
     polite_tag = ' %s, %s!' % (get_pleasantry(), get_friend())
 
     if thingnum == 0 or thingnum > 20:
-        things = thing + 's'
         face = ':/' if politeness_enabled else '>:('
         nope = get_unpleasantry()
         if thingnum > 20 and random.random() < 0.6:
@@ -356,7 +363,7 @@ def thingsay(arg):
     thing_formatters = {
         'god': make_godstring,
     }
-    formatter = thing_formatters.get(thing, base_formatter)
+    formatter = thing_formatters.get(things, base_formatter)
 
     if thingnum < 0 and 'u are a' in printout:
         if politeness_enabled:
@@ -373,15 +380,26 @@ def thingsay(arg):
         return printout
 
     thing_map = {
-        'dog': get_some_dogs,
-        'god': get_some_gods
+        'dogs': get_some_dogs,
+        'gods': get_some_gods,
+        'sandwiches': get_some_sandwiches,
     }
-    if thing in thing_map:
-        getter = thing_map[thing]
+    def rando(n=1):
+        nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
+        while True:
+            k = random.choice(nd.keys())
+            if k == 'things':
+                continue
+            g = nd[k]
+            it = g.next()
+            yield u'{s} ({thing})'.format(s=it, thing=k)
+    thing_map['things'] = rando
+    if things in thing_map:
+        getter = thing_map[things]
     else:
-        return "Didn't recognize this thing: {thing} (supported things: {things})".format(
-            thing=thing,
-            things=', '.join(thing_map.keys())
+        return "Didn't recognize this thing: `{thing}` (supported things: {ok_things})".format(
+            thing=things,
+            ok_things=', '.join(["`%s`" % thing for thing in thing_map.keys()])
         )
     thingnum = int( math.ceil( thingnum ) )
     get_thing = getter(thingnum).next
