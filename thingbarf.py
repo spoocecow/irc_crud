@@ -319,8 +319,14 @@ def get_some_sandwiches(num=1):
     sandwiches = json.loads(sandwiches_t)['sandwiches']
     random.shuffle(sandwiches)
     for sd in sandwiches:
-        if g_verbose:
-            yield u'{name}: {desc}'.format(name=sd['name'], desc=sd['description'])
+        if g_verbose and num < 10:
+            desc = sd['description']
+            print sd
+            # if there are multiple sentences in the description, cut down to just the first sentence
+            # (also strips ending periods)
+            if desc.find('.'):
+                desc = desc[:desc.find('.')]
+            yield u'{name}: {desc}'.format(name=sd['name'], desc=desc)
         else:
             yield u'%s' % sd['name']
 
@@ -413,6 +419,40 @@ def get_some_plants(num=1):
         else:
             yield u'{name}'.format(**entry)
 
+def get_some_cocktails(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'foods', 'iba_cocktails.json' ), entry='cocktails' )
+
+def get_some_jobs(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'humans', 'occupations.json' ), entry='occupations' )
+
+def get_recipe_steps(num=1):
+    menu_items = list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'menuItems.json' ), entry='menuItems' ))
+    foods = list()
+    if random.random() < 0.3:
+        foods += list(menu_items)
+    foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'fruits.json' ), entry='fruits' ))
+    foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'vegetables.json' ), entry='vegetables' ))
+    foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'herbs_n_spices.json' ), entry='herbs' ))
+    foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'herbs_n_spices.json' ), entry='spices' ))
+    if random.random() < 0.06:
+        foods += list(get_simple_json( path=os.path.join( corpora_wd, 'science', 'toxic_chemicals.json' ), entry='chemicals' ))
+    recipe_ingredients = random.sample(foods, random.randint(2, num+1))
+    i = 0
+    recipe_title = random.choice( menu_items ).capitalize()
+    adjs = list(get_simple_json(path=os.path.join( corpora_wd, 'words', 'adjs.json' ), entry='adjs' ))
+    if random.random() < 0.2:
+        recipe_title = u'%s %s' % (random.choice(adjs).capitalize(), recipe_title)
+    else:
+        recipe_title = u'%s' % recipe_title
+    prestr = recipe_title + u' [Ingredients: ' + ', '.join(recipe_ingredients) + ']'
+    for entry in get_simple_json( path=os.path.join( corpora_wd, 'foods', 'combine.json' ), entry='instructions' ):
+        random.shuffle(recipe_ingredients)
+        i += 1
+        stepstr = ('%d. ' % i) + entry.format(*recipe_ingredients).rstrip('.')
+        if i == 1:
+            stepstr = prestr + '  ' + stepstr
+        yield stepstr
+
 
 def thingsay(arg):
     """
@@ -421,7 +461,7 @@ def thingsay(arg):
     global g_verbose
     import string
     arg = ''.join( filter( lambda c: c in string.printable, arg ) )
-    re_arg = re.search( r"\s*(.+?)\s+(\w+)", arg )
+    re_arg = re.search( r"\s*(.+?)\s+(\w+(?:\s+steps)?)", arg )
     if not re_arg:
         # just bomb out, we might have been overzealous in triggering from IRC
         return
@@ -491,12 +531,15 @@ def thingsay(arg):
         'moods': get_some_moods,
         'objects': get_some_objects,
         'plants': get_some_plants,
+        'cocktails': get_some_cocktails,
+        'jobs': get_some_jobs,
+        'recipe steps': get_recipe_steps,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
         while True:
             k = random.choice(nd.keys())
-            if k == 'things':
+            if k in ['things', 'recipe steps']:
                 continue
             g = nd[k]
             it = g.next()
@@ -511,16 +554,19 @@ def thingsay(arg):
         )
     thingnum = int( math.ceil( thingnum ) )
     get_thing = getter(thingnum).next
+    separator = ','
+    if things == 'recipe steps': separator = '.'
 
     s = printout + ' '
     i = thingnum
     while i > 1:
-        s += formatter( get_thing() ) + ', '
+        s += formatter( get_thing() ) + separator + ' '
         i -= 1
     if thingnum <= 2:
-        s = s.replace( ',', '' )
+        s = s.replace( separator, '' )
     if thingnum > 1:
-        s += 'and '
+        if things != 'recipe steps':
+            s += 'and '
     last_thing = formatter( get_thing() )
     if i == 1:
         s += last_thing + '.'
@@ -530,6 +576,9 @@ def thingsay(arg):
         s += last_thing[:d_pct] + rev_chr + last_thing[d_pct:] + rev_chr + '.'
     if politeness_enabled:
         s += polite_tag
+    # IRC cuts off lines at 510 characters, split into new lines if we barfed a lot of things
+    import catread
+    s = '\r\n'.join(catread.format_lines(s, 500))
     return s
 
 
