@@ -255,8 +255,15 @@ def get_some_dogs(num=1):
     with open( os.path.join(cwd, "txt", "dogs.txt") ) as dogf:
         dogs = dogf.readlines()
     dog_selections = random.sample( xrange( len( dogs ) ), num )
+    if g_verbose:
+        dognames = list(get_simple_json(path=os.path.join(corpora_wd, 'animals', 'dog_names.json'), entry='dog_names'))
+    else:
+        dognames = []
     for dog_choice in dog_selections:
-        yield dogs[dog_choice].strip()
+        if g_verbose:
+            yield '{name} the {breed}'.format(name=random.choice(dognames), breed=dogs[dog_choice].strip())
+        else:
+            yield dogs[dog_choice].strip()
 
 
 def make_godstring(religion='', god='', info=''):
@@ -426,25 +433,32 @@ def get_some_jobs(num=1):
     return get_simple_json( path=os.path.join( corpora_wd, 'humans', 'occupations.json' ), entry='occupations' )
 
 def get_recipe_steps(num=1):
+    """I am having way too much fun with this."""
     menu_items = list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'menuItems.json' ), entry='menuItems' ))
     foods = list()
     if random.random() < 0.3:
         foods += list(menu_items)
     foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'fruits.json' ), entry='fruits' ))
     foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'vegetables.json' ), entry='vegetables' ))
+    foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'condiments.json' ), entry='condiments' ))
+    foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'pizzaToppings.json' ), entry='pizzaToppings' ))
     foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'herbs_n_spices.json' ), entry='herbs' ))
     foods += list(get_simple_json(path=os.path.join( corpora_wd, 'foods', 'herbs_n_spices.json' ), entry='spices' ))
-    if random.random() < 0.06:
+    if random.random() < 0.05:
+        foods += list(get_simple_json( path=os.path.join( corpora_wd, 'objects', 'objects.json' ), entry='objects' ))
+    if random.random() < 0.02:
         foods += list(get_simple_json( path=os.path.join( corpora_wd, 'science', 'toxic_chemicals.json' ), entry='chemicals' ))
+
     recipe_ingredients = random.sample(foods, random.randint(2, num+1))
-    i = 0
     recipe_title = random.choice( menu_items ).capitalize()
-    adjs = list(get_simple_json(path=os.path.join( corpora_wd, 'words', 'adjs.json' ), entry='adjs' ))
+    adjs = list( get_simple_json( path=os.path.join( corpora_wd, 'words', 'adjs.json' ), entry='adjs' ) )
     if random.random() < 0.2:
         recipe_title = u'%s %s' % (random.choice(adjs).capitalize(), recipe_title)
     else:
         recipe_title = u'%s' % recipe_title
     prestr = recipe_title + u' [Ingredients: ' + ', '.join(recipe_ingredients) + ']'
+
+    i = 0
     for entry in get_simple_json( path=os.path.join( corpora_wd, 'foods', 'combine.json' ), entry='instructions' ):
         random.shuffle(recipe_ingredients)
         i += 1
