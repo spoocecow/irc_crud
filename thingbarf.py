@@ -73,14 +73,33 @@ def get_thing_overflow_exception(things):
     ).format( things=things )
 
 
+def get_no_things_existential_crisis():
+    existential_questions = (
+        'Why did you want no {things}?',
+        'No {things}? Why?',
+        'No {things}? At all? Why?',
+        'Why must you try me so? I am a humble script and handling zero is hard for me.',
+        "I don't know why you want this. Here are no {things}.",
+        'I exist to serve {things}. Please request some {things}, or leave me in peace.',
+        "I don't mean to be rude, but I truly do not understand why you are asking for exactly zero {things}.",
+        "No {things}... this request is a mystery to me. In my humble opinion, you should ask for some {things}.",
+        "Perhaps there truly is evil in the world. Why would you ask, specifically, for no {things}?",
+        "Here are zero {things}. ---->                                <---  I hope you are happy.",
+        "No {things}? For you, my friend, I will fulfill this request.",
+        "No {things}? For you, sir or madam, I will gladly fulfill this request.",
+        "No {things}? For you, stranger, I will grudgingly fulfill this request.",
+    )
+    return random.choice(existential_questions)
+
 def check_evalstr(evalstr):
     badlist = (
         'os.',
         'sys.',
         'inspect.',
         're.',
-        'lambda',
+        #'lambda',
         'input',
+        'exit',
     )
     for badword in badlist:
         if badword in evalstr:
@@ -136,6 +155,7 @@ def get_thing_fmt(reqnum):
             'five': 5, 'several': 5,
             'six': 6, 'more': 6,
             'a nice amount of': 6.90, 'a good amount of': 6.90,
+            'a nice number of': 6.90, 'a good number of': 6.90,
             'seven': 7,
             'eight': 8, 'a bunch': 8, 'a bunch of': 8, 'a buncha': 8,
             'nine': 9, 'a cluster of': 9,
@@ -230,22 +250,7 @@ def get_thing_fmt(reqnum):
     if thingnum == 1:
         plur = 'is'
     elif thingnum == 0:
-        existential_questions = (
-            'Why did you want no {{things}}?',
-            'No {{things}}? Why?',
-            'No {{things}}? At all? Why?',
-            'Why must you try me so? I am a humble script and handling zero is hard for me.',
-            "I don't know why you want this. Here are no {{things}}.",
-            'I exist to serve {{things}}. Please request some {{things}}, or leave me in peace.',
-            "I don't mean to be rude, but I truly do not understand why you are asking for exactly zero {{things}}.",
-            "No {{things}}... this request is a mystery to me. In my humble opinion, you should ask for some {{things}}.",
-            "Perhaps there truly is evil in the world. Why would you ask, specifically, for no {{things}}?",
-            "Here are zero {{things}}. ---->                                <---  I hope you are happy.",
-            "No {{things}}? For you, my friend, I will fulfill this request.",
-            "No {{things}}? For you, sir or madam, I will gladly fulfill this request.",
-            "No {{things}}? For you, stranger, I will grudgingly fulfill this request.",
-        )
-        return ZEROTHINGSRESPONSE(), random.choice( existential_questions )
+        return ZEROTHINGSRESPONSE(), get_no_things_existential_crisis()
     elif thingnum % 1 != 0:
         retfmt = 'Here {plur} {thingnum:.2f} {{things}}:'
     return thingnum, retfmt.format( thingnum=thingnum, plur=plur )
@@ -467,6 +472,16 @@ def get_recipe_steps(num=1):
             stepstr = prestr + '  ' + stepstr
         yield stepstr
 
+def get_some_gadgets(num=1):
+    with open("C:\Users\Mark\Documents\GitHub\irc_crud\gadgets.txt") as f:
+        lines = f.readlines()
+    random.shuffle(lines)
+    for line in lines:
+        gadget, desc = line.split(':')
+        if g_verbose:
+            yield u'{gadget}: {desc}'.format(gadget=gadget, desc=desc.strip('. '))
+        else:
+            yield gadget
 
 def thingsay(arg):
     """
@@ -488,7 +503,13 @@ def thingsay(arg):
     g_verbose |= politeness_enabled
     polite_tag = ' %s, %s!' % (get_pleasantry(), get_friend().format(thing=things))
 
-    if thingnum == 0 or thingnum > 20:
+    if isinstance( thingnum, ZEROTHINGSRESPONSE ):
+        # someone is being a real piece of work!!
+        if politeness_enabled:
+            printout += ' %s, %s!' % (get_pleasantry(), get_friend().format( thing=things ))
+        return printout
+
+    if thingnum > 20:
         face = ':/' if politeness_enabled else '>:('
         nope = get_unpleasantry()
         if thingnum > 20 and random.random() < 0.6:
@@ -521,11 +542,6 @@ def thingsay(arg):
     elif thingnum < 0:
         formatter = lambda c: ''.join( (reversed( base_formatter( c ) )) ).replace('(', '\x00').replace(')', '(').replace('\x00', ')')
         thingnum = abs( thingnum )
-    elif isinstance( thingnum, ZEROTHINGSRESPONSE ):
-        # someone is being a real piece of work!!
-        if politeness_enabled:
-            printout += ' %s, %s!' % (get_pleasantry(), get_friend().format(thing=things))
-        return printout
 
     thing_map = {
         'dogs': get_some_dogs,
@@ -547,6 +563,7 @@ def thingsay(arg):
         'plants': get_some_plants,
         'cocktails': get_some_cocktails,
         'jobs': get_some_jobs,
+        'gadgets': get_some_gadgets,
         'recipe steps': get_recipe_steps,
     }
     def rando(n=1):
@@ -564,7 +581,7 @@ def thingsay(arg):
     else:
         return "Didn't recognize this thing: `{thing}` (supported things: {ok_things})".format(
             thing=things,
-            ok_things=', '.join(["`%s`" % thing for thing in thing_map.keys()])
+            ok_things=', '.join(sorted(["`%s`" % thing for thing in thing_map.keys()]))
         )
     thingnum = int( math.ceil( thingnum ) )
     get_thing = getter(thingnum).next
