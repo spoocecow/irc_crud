@@ -576,17 +576,21 @@ def thingsay(arg):
             it = g.next()
             yield u'{s} ({thing})'.format(s=it, thing=k)
     thing_map['things'] = rando
+    thing_map['recipes'] = get_recipe_steps
+    printable_thing_map = thing_map.copy()
+    for k,v in printable_thing_map.items():
+        thing_map[k.rstrip('s')] = v
     if things in thing_map:
         getter = thing_map[things]
     else:
         return "Didn't recognize this thing: `{thing}` (supported things: {ok_things})".format(
             thing=things,
-            ok_things=', '.join(sorted(["`%s`" % thing for thing in thing_map.keys()]))
+            ok_things=', '.join(sorted(["`%s`" % thing for thing in printable_thing_map.keys()]))
         )
     thingnum = int( math.ceil( thingnum ) )
     get_thing = getter(thingnum).next
     separator = ','
-    if things == 'recipe steps': separator = '.'
+    if 'recipe' in things: separator = '.'
 
     s = printout + ' '
     i = thingnum
@@ -596,7 +600,7 @@ def thingsay(arg):
     if thingnum <= 2:
         s = s.replace( separator, '' )
     if thingnum > 1:
-        if things != 'recipe steps':
+        if 'recipe' not in things:
             s += 'and '
     last_thing = formatter( get_thing() )
     if i == 1:
