@@ -487,7 +487,7 @@ def get_some_gadgets(num=1):
 def get_some_crimes(num=1):
     with open(os.path.join(cwd, "txt", "crimes.txt") ) as crime_f:
         crimes = crime_f.readlines()
-    crimes = random.shuffle(crimes)
+    random.shuffle(crimes)
     for crime in crimes:
         yield crime.strip()
 
