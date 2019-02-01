@@ -7,6 +7,7 @@ import json
 import os, sys
 import random
 import re
+import zipfile
 from acrobot import Acro
 
 _thisfile = inspect.getfile( inspect.currentframe() )
@@ -473,7 +474,7 @@ def get_recipe_steps(num=1):
         yield stepstr
 
 def get_some_gadgets(num=1):
-    with open("C:\Users\Mark\Documents\GitHub\irc_crud\gadgets.txt") as f:
+    with open(os.path.join(cwd, "gadgets.txt")) as f:
         lines = f.readlines()
     random.shuffle(lines)
     for line in lines:
@@ -482,6 +483,59 @@ def get_some_gadgets(num=1):
             yield u'{gadget}: {desc}'.format(gadget=gadget, desc=desc.strip('. '))
         else:
             yield gadget
+
+def get_some_crimes(num=1):
+    with open(os.path.join(cwd, "txt", "crimes.txt") ) as crime_f:
+        crimes = crime_f.readlines()
+    crimes = random.shuffle(crimes)
+    for crime in crimes:
+        yield crime.strip()
+
+def get_some_babies(num=1):
+    namezip_fn = os.path.join(cwd, 'txt', 'names.zip')
+    namezip = zipfile.ZipFile(namezip_fn, 'r')
+    inner_files = namezip.namelist()
+    inner_files = filter(lambda s: s.endswith('.txt'), inner_files)
+    while True:
+        inner_fn = random.choice(inner_files)
+        y = re.search('yob(\d{4})\.txt', inner_fn).group(1)
+        with namezip.open(inner_fn) as name_f:
+            names_txt = name_f.read()
+        rows = names_txt.splitlines()
+        if not g_verbose:
+            row = random.choice(rows)
+            name, gender, num = row.split(',')
+            yield name
+        else:
+            # hoo boy
+            f_names = m_names = dict()
+            f_ranks = m_ranks = list()
+            f_nums = m_nums = dict()
+            for row in rows:
+                name, gender, num = row.split( ',' )
+                num = int(num)
+                if gender == 'F':
+                    N, R, M = f_names, f_ranks, f_nums
+                else:
+                    N, R, M = m_names, m_ranks, m_nums
+                N[name] = num
+                if num not in M:
+                    M[num] = []
+                M[num].append(name)
+                if num not in R:
+                    R.append(num)
+            if random.random() < 0.5:
+                pool, ranks, nums = f_names, f_ranks, f_nums
+            else:
+                pool, ranks, nums = m_names, m_ranks, m_nums
+            name = random.choice(pool.keys())
+            num_babies = pool[name]
+            r = sorted(ranks, reverse=True).index(num_babies)
+            tied = ''
+            if len(nums[num_babies]) > 1:
+                tied = 'T-'
+            yield '%s (%s #%s%s)' % (name, y, tied, r)
+
 
 def thingsay(arg):
     """
@@ -565,6 +619,8 @@ def thingsay(arg):
         'jobs': get_some_jobs,
         'gadgets': get_some_gadgets,
         'recipe steps': get_recipe_steps,
+        'crimes': get_some_crimes,
+        'babies': get_some_babies,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
