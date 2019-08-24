@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 import time
@@ -5,13 +6,15 @@ import time
 g_letters = 'abcdefghijklmnopqrstuvwxyz'
 g_corp = []
 
-L = {l: [] for l in g_letters}  # actual words
+L = {l: [] for l in g_letters}  # words indexed by letter/space
 M = {l: [] for l in g_letters}  # probability of letter at space
+W = dict()  # words indexed by length
 
 def setup():
     global g_corp
     global L
     global M
+    global W
     with open(r'C:\Users\Mark\Documents\GitHub\irc_crud\wordlist.txt') as t:
         g_corp = [w.strip().lower() for w in t.readlines()]
 
@@ -20,6 +23,9 @@ def setup():
     t = time.time()
 
     for word in g_corp:
+        if len(word) not in W:
+            W[len(word)] = []
+        W[len(word)].append(word)
         for i, letter in enumerate(word):
             while len(L[letter]) <= i:
                 L[letter].append( [] )
@@ -38,6 +44,10 @@ def words_with_letter(letter, place):
     return set(L[letter][place])
 
 def words_that_fit(template, match_length=True):
+    # special case: no letters filled in at all
+    if template == '_' * len(template):
+        return W[len(template)]
+
     rv = []
     for i, letter in enumerate(template):
         if letter not in g_letters:
@@ -99,10 +109,9 @@ ___##
         return self.G[y][x]
 
     def __find_words(self):
-        self.across_words, self.across_coords = [], []
-        self.down_words, self.down_coords = [], []
+        self.across_words = []
+        self.down_words = []
         for across_start in self.across_starts:
-            print "ACROSS", across_start
             x, y = across_start
             w = ''
             coords = []
@@ -113,7 +122,6 @@ ___##
             self.across_words.append(w)
             self.across_coords.append(coords)
         for down_start in self.down_starts:
-            print "DOWN", down_start
             x, y = down_start
             w = ''
             coords = []
@@ -168,15 +176,53 @@ ___##
         assert len(crosses) == len(word)
         return crosses
 
+    def fill(self, before_word, new_word):
+        assert len(before_word) == len(new_word)
+        i = 0
+        for (x, y) in self.get_coords_of(before_word):
+            row = self.G[y]
+            self.G[y] = row[:x] + new_word[i] + row[x+1:]
+            i += 1
+        # refresh
+        self.__find_words()
+
     def state(self):
-        return (self.G, self.across_words, self.down_words)
+        return '\n'.join(self.G)
 
-    def solve(self, state=None, debug=True):
+    def is_complete(self):
+        for w in self.across_words + self.down_words:
+            if '_' in w:
+                return False
+        return True
+
+    def solve(self, debug=True):
         """Try to "solve" the puzzle"""
-        if not state:
-            # initial state = whole grid
-            state = self.state()
-
+        if debug:
+            os.system('clear')
+            print '\n' * 5
+            print str(self)
+        if self.is_complete():
+            return self
+        # try and fill the longest remaining word
+        remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=len)
+        nom = remaining_words[0]
+        possibles = list(words_that_fit(nom))
+        if not possibles:
+            # cornered, fall back and pursue other options
+            # if debug:
+            #     print "WAH"
+            return
+        random.shuffle(possibles)
+        for new_word in possibles[:20]:
+            # try to put the word in
+            g2 = Grid(self.state())
+            g2.fill(nom, new_word)
+            if g2.solve():
+                return g2
+        #     else:
+        #         print "wah"
+        # print "wwwwfggggg"
+        return
 
 
 
@@ -195,3 +241,9 @@ ___##
     p = Grid(gridstr)
     print p
     print p.get_crosses_of('ham')
+
+    p2 = p.solve()
+    print "@@@@@@@@@@@@@@"
+    print p
+    print "@@@@@@@@@@@@@@"
+    print p2
