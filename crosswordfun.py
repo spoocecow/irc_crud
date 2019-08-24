@@ -3,6 +3,11 @@ import random
 import sys
 import time
 
+def cls():
+    #print('\033[H\033[J')
+    os.system('clear')
+
+
 g_letters = 'abcdefghijklmnopqrstuvwxyz'
 g_corp = []
 
@@ -72,7 +77,6 @@ def words_that_fit(template, match_length=True):
 
 class Grid(object):
 
-    W = H = 5
     ACROSS = 0
     DOWN = 1
 
@@ -88,8 +92,8 @@ ____#
 ___##
 """.splitlines()
         self.G = filter(None, self.G)
-        assert len(self.G) == self.H
-        assert (len(self.G[0])) == self.W
+        self.H = len(self.G)
+        self.W = len(self.G[0])
         self.across_starts, self.down_starts = [], []
         self.across_coords, self.down_coords = [], []
         self.across_words, self.down_words = [], []
@@ -100,9 +104,9 @@ ___##
         for y, row in enumerate(self.G):
             for x, col in enumerate(row):
                 if col != '#':
-                    if x == 0 or (x > 1 and self.at(x-1, y) == '#'):
+                    if x == 0 or (x >= 1 and self.at(x-1, y) == '#'):
                         self.across_starts.append( (x, y) )
-                    if y == 0 or (y > 1 and self.at(x, y-1) == '#'):
+                    if y == 0 or (y >= 1 and self.at(x, y-1) == '#'):
                         self.down_starts.append( (x, y) )
 
     def at(self, x, y):
@@ -198,13 +202,13 @@ ___##
     def solve(self, debug=True):
         """Try to "solve" the puzzle"""
         if debug:
-            os.system('clear')
-            print '\n' * 5
+            cls()
             print str(self)
         if self.is_complete():
+            print "8)"
             return self
         # try and fill the longest remaining word
-        remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=len)
+        remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=len, reverse=True)
         nom = remaining_words[0]
         possibles = list(words_that_fit(nom))
         if not possibles:
@@ -217,8 +221,15 @@ ___##
             # try to put the word in
             g2 = Grid(self.state())
             g2.fill(nom, new_word)
-            if g2.solve():
-                return g2
+            for new_cross in g2.get_crosses_of(new_word):
+                if '_' in new_cross:
+                    continue
+                if new_cross not in g_corp:
+                    break
+            else:
+                p = g2.solve()
+                if p:
+                    return p
         #     else:
         #         print "wah"
         # print "wwwwfggggg"
@@ -232,18 +243,15 @@ ___##
 if __name__ == "__main__":
     setup()
     gridstr = """
-##ham
-#g___
-_____
-____#
-___##
+##____
+#_____
+______
+____##
+___###
 """
     p = Grid(gridstr)
     print p
-    print p.get_crosses_of('ham')
 
     p2 = p.solve()
-    print "@@@@@@@@@@@@@@"
-    print p
     print "@@@@@@@@@@@@@@"
     print p2
