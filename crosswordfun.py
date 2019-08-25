@@ -4,6 +4,9 @@ import random
 import sys
 import time
 
+import colorama
+colorama.init()
+
 
 def memoize(func):
     cache = dict()
@@ -19,8 +22,7 @@ def memoize(func):
 
 
 def cls():
-    #print('\033[H\033[J')
-    os.system('clear')
+    print "\033[H"
 
 
 g_letters = 'abcdefghijklmnopqrstuvwxyz'
@@ -64,6 +66,8 @@ def setup():
     print time.time() - t, sys.getsizeof(L)
 
 def words_with_letter(letter, place):
+    if place >= len(L[letter]):
+        return set()
     return set(L[letter][place])
 
 @memoize
@@ -309,7 +313,7 @@ ____##
 ___###
 """
     gridstr = """
-______#_________
+#_____#________#
 ______#_________
 ______#_________
 ____#______#____
@@ -323,10 +327,11 @@ ____#_____#_____
 ____#______#____
 _________#______
 _________#______
-_________#______
-"""
+#________#_____#
+"""  # adapted from nyt 08/23/2019
     p = Grid(gridstr)
     print p
+    os.system('clear')
 
     p2 = p.solve()
     print "@@@@@@@@@@@@@@"
