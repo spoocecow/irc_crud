@@ -1,7 +1,22 @@
+import functools
 import os
 import random
 import sys
 import time
+
+
+def memoize(func):
+    cache = dict()
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        h = hash(args)
+        if h in cache:
+            return cache[h]
+        rv = func(*args, **kwargs)
+        cache[hash(args)] = rv
+        return rv
+    return inner
+
 
 def cls():
     #print('\033[H\033[J')
@@ -13,12 +28,14 @@ g_corp = []
 
 L = {l: [] for l in g_letters}  # words indexed by letter/space
 M = {l: [] for l in g_letters}  # probability of letter at space
+MM = {l: 0 for l in g_letters}  # probability of letter overall
 W = dict()  # words indexed by length
 
 def setup():
     global g_corp
     global L
     global M
+    global MM
     global W
     with open(r'C:\Users\Mark\Documents\GitHub\irc_crud\wordlist.txt') as t:
         g_corp = [w.strip().lower() for w in t.readlines()]
@@ -35,6 +52,7 @@ def setup():
             while len(L[letter]) <= i:
                 L[letter].append( [] )
             L[letter][i].append(word)
+            MM[letter] += 1
 
     for letter in L:
         places = L[letter]
@@ -48,7 +66,8 @@ def setup():
 def words_with_letter(letter, place):
     return set(L[letter][place])
 
-def words_that_fit(template, match_length=True):
+@memoize
+def words_that_fit(template):
     # special case: no letters filled in at all
     if template == '_' * len(template):
         return W[len(template)]
@@ -58,11 +77,10 @@ def words_that_fit(template, match_length=True):
         if letter not in g_letters:
             continue
         s = words_with_letter(letter, i)
-        if match_length:
-            s2 = s.copy()
-            for w in s2:
-                if len(w) != len(template):
-                    s.discard(w)
+        s2 = s.copy()
+        for w in s2:
+            if len(w) != len(template):
+                s.discard(w)
         if len(s) > 0:
             rv.append(s)
         else:
@@ -75,10 +93,24 @@ def words_that_fit(template, match_length=True):
             return []
     return final
 
+def score(template):
+    total = 0
+    mmratio = float(sum(MM.values()))
+    for i, letter in enumerate(template):
+        if letter == '_':
+            continue
+        if letter in M:
+            total += (M[letter][i] * (MM[letter] / mmratio))
+        else:
+            raise ValueError(letter)
+    return total
+
 class Grid(object):
 
     ACROSS = 0
     DOWN = 1
+
+    MIN_WORD_LEN = 1
 
     def __init__(self, grid=''):
         self.G = grid.splitlines()
@@ -97,6 +129,7 @@ ___##
         self.across_starts, self.down_starts = [], []
         self.across_coords, self.down_coords = [], []
         self.across_words, self.down_words = [], []
+        self.words = dict()
         self.__find_starts()
         self.__find_words()
 
@@ -115,6 +148,7 @@ ___##
     def __find_words(self):
         self.across_words = []
         self.down_words = []
+        self.words = dict()
         for across_start in self.across_starts:
             x, y = across_start
             w = ''
@@ -123,8 +157,11 @@ ___##
                 w += self.at(x,y)
                 coords.append( (x,y) )
                 x += 1
-            self.across_words.append(w)
-            self.across_coords.append(coords)
+            if len(w) >= Grid.MIN_WORD_LEN:
+                self.across_words.append(w)
+                self.across_coords.append(coords)
+            for coord in coords:
+                self.words[coord] = [w]
         for down_start in self.down_starts:
             x, y = down_start
             w = ''
@@ -133,8 +170,11 @@ ___##
                 w += self.at(x, y)
                 coords.append( (x, y) )
                 y += 1
-            self.down_words.append(w)
-            self.down_coords.append(coords)
+            if len(w) >= Grid.MIN_WORD_LEN:
+                self.down_words.append(w)
+                self.down_coords.append(coords)
+            for coord in coords:
+                self.words[coord].append(w)
 
     def get_start_of(self, word):
         if word in self.across_words:
@@ -165,20 +205,47 @@ ___##
 
     def get_crosses_of(self, word):
         crosses = []
-        start, direction = self.get_start_of(word)
-        if direction == self.ACROSS:
-            possibles = self.down_coords
-            ref_words = self.down_words
-        else:
-            possibles = self.across_coords
-            ref_words = self.across_words
         for x,y in self.get_coords_of(word):
-            for i, nom in enumerate(possibles):
-                if (x,y) in nom:
-                    crosses.append(ref_words[i])
-                    break
+            a,d = self.words[(x,y)]
+            if a == word:
+                crosses.append(d)
+            else:
+                crosses.append(a)
+        # if direction == self.ACROSS:
+        #     possibles = self.down_coords
+        #     ref_words = self.down_words
+        # else:
+        #     possibles = self.across_coords
+        #     ref_words = self.across_words
+        # for x,y in self.get_coords_of(word):
+        #     for i, nom in enumerate(possibles):
+        #         if (x,y) in nom:
+        #             crosses.append(ref_words[i])
+        #             break
         assert len(crosses) == len(word)
         return crosses
+
+    def proposed_new_crosses(self, before_word, new_word):
+        assert len( before_word ) == len( new_word )
+
+        g = Grid(self.state())
+        g.fill(before_word, new_word)
+        return g.get_crosses_of(new_word)
+        # for x,y in self.get_coords_of(before_word):
+        #     a,d = self.words[(x,y)]
+        #     if a == before_word:
+        #         for dw in self.down_words:
+        #             # dsafjksdj
+        #             pass
+
+
+        # old_crosses = self.get_crosses_of(before_word)
+        # old_coords = self.get_coords_of(before_word)
+        # for w in old_crosses:
+        #     if w in self.across_words:
+        #         idx = self.across_words.index(w)
+        #         coords = self.across_coords[idx]
+
 
     def fill(self, before_word, new_word):
         assert len(before_word) == len(new_word)
@@ -203,13 +270,33 @@ ___##
         """Try to "solve" the puzzle"""
         if debug:
             cls()
+            print
             print str(self)
         if self.is_complete():
-            print "8)"
             return self
-        # try and fill the longest remaining word
-        remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=len, reverse=True)
-        nom = remaining_words[0]
+        if False:
+            # try and fill the longest remaining word
+            remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=len, reverse=True)
+            noms = []
+            for nom in remaining_words:
+                if len(nom) == len(remaining_words[0]):
+                    noms.append(nom)
+                else:
+                    break
+            nom = random.choice(noms)
+        else:
+            # try and fill the hardest remaining slot
+            def slot_easiness(s):
+                return len(words_that_fit(s))
+
+            remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=slot_easiness)
+            noms = []
+            for nom in remaining_words:
+                if slot_easiness(nom) == slot_easiness(remaining_words[0]):
+                    noms.append(nom)
+                else:
+                    break
+            nom = random.choice(noms)
         possibles = list(words_that_fit(nom))
         if not possibles:
             # cornered, fall back and pursue other options
@@ -217,14 +304,26 @@ ___##
             #     print "WAH"
             return
         random.shuffle(possibles)
-        for new_word in possibles[:20]:
+        possibles = possibles[:200]
+        def new_score(prop):
+            return sum( map(score, self.proposed_new_crosses(nom, prop)) )
+
+        scores = map(new_score, possibles)
+        best = sorted( zip(scores, possibles), reverse=True )[:20]
+        random.shuffle(best)
+
+        for _, new_word in best:
+            if new_word in (self.across_words + self.down_words):
+                # don't reuse words
+                continue
             # try to put the word in
             g2 = Grid(self.state())
             g2.fill(nom, new_word)
             for new_cross in g2.get_crosses_of(new_word):
-                if '_' in new_cross:
+                if len(new_cross) == 1:
                     continue
-                if new_cross not in g_corp:
+                if not words_that_fit(new_cross):
+                    #print "nope:", new_cross
                     break
             else:
                 p = g2.solve()
@@ -248,6 +347,15 @@ if __name__ == "__main__":
 ______
 ____##
 ___###
+"""
+    gridstr = """
+##____#
+#______
+_______
+___#___
+_______
+______#
+#____##
 """
     p = Grid(gridstr)
     print p
