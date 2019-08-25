@@ -114,28 +114,25 @@ class Grid(object):
     ACROSS = 0
     DOWN = 1
 
+    POP = 0
+
     MIN_WORD_LEN = 1
 
-    def __init__(self, grid=''):
+    def __init__(self, grid='', state=None):
         self.G = grid.splitlines()
-        if not grid:
-            self.G = \
-"""
-##___
-#____
-_____
-____#
-___##
-""".splitlines()
-        self.G = filter(None, self.G)
+        self.G = [l.strip().lower() for l in self.G if l.strip()]
         self.H = len(self.G)
         self.W = len(self.G[0])
         self.across_starts, self.down_starts = [], []
         self.across_coords, self.down_coords = [], []
         self.across_words, self.down_words = [], []
-        self.words = dict()
-        self.__find_starts()
-        self.__find_words()
+        self.words_by_coord = dict()
+        if state:
+            self.across_starts, self.down_starts, self.across_coords, self.down_coords, self.across_words, self.down_words = state
+        else:
+            self.__find_starts()
+            self.__find_words()
+        Grid.POP += 1
 
     def __find_starts(self):
         for y, row in enumerate(self.G):
@@ -147,12 +144,14 @@ ___##
                         self.down_starts.append( (x, y) )
 
     def at(self, x, y):
-        return self.G[y][x]
+        return self.G[y][x].lower()
 
     def __find_words(self):
+        self.across_coords = []
+        self.down_coords = []
         self.across_words = []
         self.down_words = []
-        self.words = dict()
+        self.words_by_coord = dict()
         for across_start in self.across_starts:
             x, y = across_start
             w = ''
@@ -165,7 +164,7 @@ ___##
                 self.across_words.append(w)
                 self.across_coords.append(coords)
             for coord in coords:
-                self.words[coord] = [w]
+                self.words_by_coord[coord] = [w]
         for down_start in self.down_starts:
             x, y = down_start
             w = ''
@@ -178,7 +177,7 @@ ___##
                 self.down_words.append(w)
                 self.down_coords.append(coords)
             for coord in coords:
-                self.words[coord].append(w)
+                self.words_by_coord[coord].append( w )
 
     def get_start_of(self, word):
         if word in self.across_words:
@@ -210,7 +209,7 @@ ___##
     def get_crosses_of(self, word):
         crosses = []
         for x,y in self.get_coords_of(word):
-            a,d = self.words[(x,y)]
+            a,d = self.words_by_coord[(x, y)]
             if a == word:
                 crosses.append(d)
             else:
@@ -222,9 +221,17 @@ ___##
     def proposed_new_crosses(self, before_word, new_word):
         assert len( before_word ) == len( new_word )
 
-        g = Grid(self.state())
+        board, state = self.state()
+        g = Grid(board, state)
         g.fill(before_word, new_word)
         return g.get_crosses_of(new_word)
+
+    @property
+    def words(self):
+        return self.across_words+self.down_words
+
+    def score(self):
+        return sum( map( score, self.words ) )
 
     def fill(self, before_word, new_word):
         assert len(before_word) == len(new_word)
@@ -237,66 +244,70 @@ ___##
         self.__find_words()
 
     def state(self):
-        return '\n'.join(self.G)
+        return '\n'.join(self.G), (self.across_starts, self.down_starts, self.across_coords, self.down_coords, self.across_words, self.down_words)
 
     def is_complete(self):
-        for w in self.across_words + self.down_words:
+        for w in self.words:
             if '_' in w:
                 return False
         return True
 
+    def display(self):
+        cls()
+        print Grid.POP, len([w for w in self.words if '_' not in w]), '/', len(self.words)
+        print self
+
     def solve(self, debug=True):
         """Try to "solve" the puzzle"""
         if debug:
-            cls()
-            print
-            print str(self)
+            self.display()
+            print "New gen".ljust(40)
         if self.is_complete():
             return self
 
         # try and fill the hardest remaining slot
         def slot_easiness(s):
-            return len(words_that_fit(s))
+            return len(words_that_fit(s)) + len(s)**0.5
+            #return (len(s)**0.9) * len(words_that_fit(s))
 
-        remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=slot_easiness)
-        noms = []
+        remaining_words = sorted([w for w in self.words if '_' in w], key=slot_easiness)
         for nom in remaining_words:
-            if slot_easiness(nom) == slot_easiness(remaining_words[0]):
-                noms.append(nom)
-            else:
-                break
-        nom = random.choice(noms)
-        possibles = list(words_that_fit(nom))
-        if not possibles:
-            # cornered, fall back and pursue other options
-            return
-        random.shuffle(possibles)
-        possibles = possibles[:200]
-        def new_score(prop):
-            return sum( map(score, self.proposed_new_crosses(nom, prop)) )
 
-        scores = map(new_score, possibles)
-        best = sorted( zip(scores, possibles), reverse=True )[:20]
-        random.shuffle(best)
+            possibles = list(words_that_fit(nom))
+            if not possibles:
+                # cornered, fall back and pursue other options
+                return
+            #random.shuffle(possibles)
+            #possibles = possibles[:200]
+            def new_score(prop):
+                return sum( map(score, self.proposed_new_crosses(nom, prop)) )
 
-        for _, new_word in best:
-            if new_word in (self.across_words + self.down_words):
-                # don't reuse words
-                continue
-            # try to put the word in
-            g2 = Grid(self.state())
-            g2.fill(nom, new_word)
-            for new_cross in g2.get_crosses_of(new_word):
-                if len(new_cross) == 1:
+            scores = map(new_score, possibles)
+            best = sorted( zip(scores, possibles), reverse=True )[:len(possibles)/3]
+            random.shuffle(best)
+
+            for _, new_word in best:
+                if new_word in self.words:
+                    # don't reuse words
                     continue
-                if not words_that_fit(new_cross):
-                    break
-            else:
-                p = g2.solve()
-                if p:
-                    return p
-
-        return
+                # try to put the word in
+                g2 = Grid(*self.state())
+                g2.fill(nom, new_word)
+                g2.display()
+                for new_cross in g2.get_crosses_of(new_word):
+                    if len(new_cross) == 1:
+                        continue
+                    if not words_that_fit(new_cross):
+                        print new_cross.ljust(g2.W), "disqualifies"
+                        break
+                else:
+                    p = g2.solve()
+                    if p:
+                        return p
+                    else:
+                        if random.random() < 0.1:
+                            # let's back out and try a different remaining word
+                            return
 
 
 
@@ -305,14 +316,28 @@ ___##
 
 if __name__ == "__main__":
     setup()
-    gridstr = """
+    easy_gridstr = """
 ##____
 #_____
 ______
 ____##
 ___###
 """
-    gridstr = """
+    med_gridstr = """
+______#_______
+______#_______
+______#_______
+____#______###
+_____#_____###
+#_________####
+##____##___###
+###__________#
+____#___##____
+___###________
+____#_____#___
+____#_____####
+____#____#####"""
+    hard_gridstr = """
 #_____#________#
 ______#_________
 ______#_________
@@ -329,7 +354,7 @@ _________#______
 _________#______
 #________#_____#
 """  # adapted from nyt 08/23/2019
-    p = Grid(gridstr)
+    p = Grid(med_gridstr)
     print p
     os.system('clear')
 
