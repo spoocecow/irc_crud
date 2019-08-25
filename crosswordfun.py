@@ -93,16 +93,16 @@ def words_that_fit(template):
             return []
     return final
 
+@memoize
 def score(template):
     total = 0
     mmratio = float(sum(MM.values()))
     for i, letter in enumerate(template):
         if letter == '_':
             continue
-        if letter in M:
-            total += (M[letter][i] * (MM[letter] / mmratio))
-        else:
-            raise ValueError(letter)
+        if len(M[letter]) <= i:
+            return -1
+        total += (M[letter][i] * (MM[letter] / mmratio))
     return total
 
 class Grid(object):
@@ -211,17 +211,7 @@ ___##
                 crosses.append(d)
             else:
                 crosses.append(a)
-        # if direction == self.ACROSS:
-        #     possibles = self.down_coords
-        #     ref_words = self.down_words
-        # else:
-        #     possibles = self.across_coords
-        #     ref_words = self.across_words
-        # for x,y in self.get_coords_of(word):
-        #     for i, nom in enumerate(possibles):
-        #         if (x,y) in nom:
-        #             crosses.append(ref_words[i])
-        #             break
+
         assert len(crosses) == len(word)
         return crosses
 
@@ -231,21 +221,6 @@ ___##
         g = Grid(self.state())
         g.fill(before_word, new_word)
         return g.get_crosses_of(new_word)
-        # for x,y in self.get_coords_of(before_word):
-        #     a,d = self.words[(x,y)]
-        #     if a == before_word:
-        #         for dw in self.down_words:
-        #             # dsafjksdj
-        #             pass
-
-
-        # old_crosses = self.get_crosses_of(before_word)
-        # old_coords = self.get_coords_of(before_word)
-        # for w in old_crosses:
-        #     if w in self.across_words:
-        #         idx = self.across_words.index(w)
-        #         coords = self.across_coords[idx]
-
 
     def fill(self, before_word, new_word):
         assert len(before_word) == len(new_word)
@@ -274,34 +249,22 @@ ___##
             print str(self)
         if self.is_complete():
             return self
-        if False:
-            # try and fill the longest remaining word
-            remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=len, reverse=True)
-            noms = []
-            for nom in remaining_words:
-                if len(nom) == len(remaining_words[0]):
-                    noms.append(nom)
-                else:
-                    break
-            nom = random.choice(noms)
-        else:
-            # try and fill the hardest remaining slot
-            def slot_easiness(s):
-                return len(words_that_fit(s))
 
-            remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=slot_easiness)
-            noms = []
-            for nom in remaining_words:
-                if slot_easiness(nom) == slot_easiness(remaining_words[0]):
-                    noms.append(nom)
-                else:
-                    break
-            nom = random.choice(noms)
+        # try and fill the hardest remaining slot
+        def slot_easiness(s):
+            return len(words_that_fit(s))
+
+        remaining_words = sorted([w for w in self.across_words + self.down_words if '_' in w], key=slot_easiness)
+        noms = []
+        for nom in remaining_words:
+            if slot_easiness(nom) == slot_easiness(remaining_words[0]):
+                noms.append(nom)
+            else:
+                break
+        nom = random.choice(noms)
         possibles = list(words_that_fit(nom))
         if not possibles:
             # cornered, fall back and pursue other options
-            # if debug:
-            #     print "WAH"
             return
         random.shuffle(possibles)
         possibles = possibles[:200]
@@ -323,15 +286,12 @@ ___##
                 if len(new_cross) == 1:
                     continue
                 if not words_that_fit(new_cross):
-                    #print "nope:", new_cross
                     break
             else:
                 p = g2.solve()
                 if p:
                     return p
-        #     else:
-        #         print "wah"
-        # print "wwwwfggggg"
+
         return
 
 
@@ -349,13 +309,21 @@ ____##
 ___###
 """
     gridstr = """
-##____#
-#______
-_______
-___#___
-_______
-______#
-#____##
+______#_________
+______#_________
+______#_________
+____#______#____
+_____#_____#____
+#_________###___
+##____##___#____
+###__________###
+____#___##____##
+___###_________#
+____#_____#_____
+____#______#____
+_________#______
+_________#______
+_________#______
 """
     p = Grid(gridstr)
     print p
