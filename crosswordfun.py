@@ -261,18 +261,17 @@ class Grid(object):
         """Try to "solve" the puzzle"""
         if debug:
             self.display()
-            print "New gen".ljust(40)
         if self.is_complete():
             return self
 
         # try and fill the hardest remaining slot
         def slot_easiness(s):
-            return len(words_that_fit(s)) + len(s)**0.5
-            #return (len(s)**0.9) * len(words_that_fit(s))
+            return len(words_that_fit(s))
 
         remaining_words = sorted([w for w in self.words if '_' in w], key=slot_easiness)
+        nom_n = 0
         for nom in remaining_words:
-
+            nom_n += 1
             possibles = list(words_that_fit(nom))
             if not possibles:
                 # cornered, fall back and pursue other options
@@ -282,14 +281,19 @@ class Grid(object):
             def new_score(prop):
                 return sum( map(score, self.proposed_new_crosses(nom, prop)) )
 
-            scores = map(new_score, possibles)
+            def newer_score(prop):
+                return sum(map(slot_easiness, self.proposed_new_crosses(nom, prop)))
+
+            scores = map(newer_score, possibles)
             best = sorted( zip(scores, possibles), reverse=True )[:len(possibles)/3]
             random.shuffle(best)
 
+            try_n = 0
             for _, new_word in best:
                 if new_word in self.words:
                     # don't reuse words
                     continue
+                try_n += 1
                 # try to put the word in
                 g2 = Grid(*self.state())
                 g2.fill(nom, new_word)
@@ -305,9 +309,11 @@ class Grid(object):
                     if p:
                         return p
                     else:
-                        if random.random() < 0.1:
+                        if random.random() < 0.01 * try_n:
                             # let's back out and try a different remaining word
                             return
+            if random.random() < 0.001 * nom_n:  # idk man.
+                return
 
 
 
