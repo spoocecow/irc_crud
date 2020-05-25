@@ -171,7 +171,7 @@ def get_thing_fmt(reqnum):
             'seventeen': 17,
             'eighteen': 18, 'a ton of': 18, 'tons of': 18,
             'nineteen': 19,
-            'twenty': 20}
+            'twenty': 20, 'all the': 20}
         operations = {
             'plus': '+', 'add': '+', 'and': '+',
             'minus': '-', 'subtract': '-',
@@ -407,7 +407,7 @@ def get_some_cities(num=1):
             yield u'{city}, {state} (pop. {population})'.format(**entry)
         else:
             yield u'{city}, {state}'.format(**entry)
-
+            
 
 def get_some_colors(num=1):
     for entry in get_simple_json(path=os.path.join(corpora_wd, 'colors', 'crayola.json'), entry='colors'):
@@ -415,6 +415,7 @@ def get_some_colors(num=1):
             yield u'{color} ({hex})'.format(**entry)
         else:
             yield u'{color}'.format(**entry)
+
 
 def get_some_celebs(num=1):
     return get_simple_json(path=os.path.join(corpora_wd, 'humans', 'celebrities.json'), entry='celebrities')
@@ -537,6 +538,36 @@ def get_some_babies(num=1):
             yield '%s (%s #%s%s)' % (name, y, tied, r)
 
 
+def get_some_countries(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'geography', 'countries.json' ), entry='countries' )
+
+
+def get_some_diseases(num=1):
+    symptoms = list(get_some_symptoms(num))
+
+    for entry in get_simple_json(path=os.path.join(corpora_wd, 'medicine', 'diseases.json'), entry='diseases'):
+        # each entry is a list of increasingly specific terms, so most specific term is most verbose
+        if g_verbose:
+            disease = entry[-1]
+        else:
+            disease = random.choice(entry)
+        include_symptoms = random.random() < 0.5
+        if include_symptoms:
+            n = random.randint(1,2)
+            symstr = ', '.join(random.sample(symptoms, n))
+            yield '{disease} (symptoms: {symptoms})'.format(disease=disease, symptoms=symstr)
+        else:
+            yield disease
+
+
+def get_some_symptoms(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'medicine', 'symptoms.json' ), entry='symptoms' )
+
+
+def get_some_sports(num=1):
+    return get_simple_json( path=os.path.join( corpora_wd, 'sports', 'sports.json' ), entry='sports' )
+
+
 def thingsay(arg):
     """
     :param str arg:
@@ -551,7 +582,7 @@ def thingsay(arg):
     num = re_arg.group(1)
     things = re_arg.group(2)
     thingnum, fmt_str = get_thing_fmt( num )
-    printout = fmt_str.format(things=things)
+    printout = unicode(fmt_str.format(things=things))
 
     politeness_enabled = 'please' in arg.lower()
     g_verbose |= politeness_enabled
@@ -560,7 +591,7 @@ def thingsay(arg):
     if isinstance( thingnum, ZEROTHINGSRESPONSE ):
         # someone is being a real piece of work!!
         if politeness_enabled:
-            printout += ' %s, %s!' % (get_pleasantry(), get_friend().format( thing=things ))
+            printout += u' %s, %s!' % (get_pleasantry(), get_friend().format( thing=things ))
         return printout
 
     if thingnum > 20:
@@ -621,6 +652,9 @@ def thingsay(arg):
         'recipe steps': get_recipe_steps,
         'crimes': get_some_crimes,
         'babies': get_some_babies,
+        'countries': get_some_countries,
+        'diseases': get_some_diseases,
+        'sports': get_some_sports,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
@@ -630,7 +664,7 @@ def thingsay(arg):
                 continue
             g = nd[k]
             it = g.next()
-            yield u'{s} ({thing})'.format(s=it, thing=k)
+            yield '{s} ({thing})'.format(s=it, thing=k)
     thing_map['things'] = rando
     thing_map['recipes'] = get_recipe_steps
     printable_thing_map = thing_map.copy()
@@ -641,10 +675,10 @@ def thingsay(arg):
     else:
         return "Didn't recognize this thing: `{thing}` (supported things: {ok_things})".format(
             thing=things,
-            ok_things=', '.join(sorted(["`%s`" % thing for thing in printable_thing_map.keys()]))
+            ok_things=', '.join(sorted(["%s" % thing for thing in printable_thing_map.keys()]))
         )
-    thingnum = int( math.ceil( thingnum ) )
-    get_thing = getter(thingnum).next
+    thingmax = int( math.ceil( thingnum ) )
+    get_thing = getter(thingmax).next
     separator = ','
     if 'recipe' in things: separator = '.'
 
@@ -669,7 +703,7 @@ def thingsay(arg):
         s += polite_tag
     # IRC cuts off lines at 510 characters, split into new lines if we barfed a lot of things
     import catread
-    s = '\r\n'.join(catread.format_lines(s, 500))
+    s = u'\r\n'.join(catread.format_lines(s, 500))
     return s
 
 
@@ -688,7 +722,7 @@ def serve_thingbarf(arg):
         os.makedirs( r'C:\tmp' )
     with codecs.open( thingbarf_file, 'w+', 'utf-8' ) as thingf:
         thingf.write( data.rstrip() )
-    print data
+    print repr(data)
     return True
 
 
