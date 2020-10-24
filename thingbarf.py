@@ -568,6 +568,35 @@ def get_some_sports(num=1):
     return get_simple_json( path=os.path.join( corpora_wd, 'sports', 'sports.json' ), entry='sports' )
 
 
+def get_some_numbers(num=1):
+    s0 = ("", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+    s1 = ("ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen")
+    s2 = ("", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety")
+    for i in range(num):
+        p = random.random()
+        if p < 0.5:
+            n = random.randint(0, 100)
+        elif p < 0.75:
+            n = random.randint(100, 1000)
+        else:
+            n = random.randint(1000, 100000)
+        if n == 0:
+            yield "zero"
+        elif n == 69:
+            yield "69 >:D"
+        elif n == 420:
+            yield "420 >:D"
+        elif n == 666:
+            yield "666 >:D"
+
+def get_some_greets(num=1):
+    with open( os.path.join( cwd, "txt", "greetz.txt" ) ) as greetz_f:
+        greetz = greetz_f.readlines()
+    random.shuffle( greetz )
+    for greet in greetz:
+        yield greet.strip()
+
+
 def thingsay(arg):
     """
     :param str arg:
@@ -655,6 +684,8 @@ def thingsay(arg):
         'countries': get_some_countries,
         'diseases': get_some_diseases,
         'sports': get_some_sports,
+        'numbers': get_some_numbers,
+        'greetings': get_some_greets,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
