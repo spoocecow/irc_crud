@@ -579,7 +579,7 @@ def get_some_numbers(num=1):
         elif p < 0.75:
             n = random.randint(100, 1000)
         else:
-            n = random.randint(1000, 100000)
+            n = random.randint(1000, 10000)
         if n == 0:
             yield "zero"
         elif n == 69:
@@ -588,6 +588,13 @@ def get_some_numbers(num=1):
             yield "420 >:D"
         elif n == 666:
             yield "666 >:D"
+        else:
+            # regular number...
+            s = ''
+            for d in str(n):
+                pass  # TODO
+            yield n
+
 
 def get_some_greets(num=1):
     with open( os.path.join( cwd, "txt", "greetz.txt" ) ) as greetz_f:
@@ -596,6 +603,37 @@ def get_some_greets(num=1):
     for greet in greetz:
         yield greet.strip()
 
+
+def get_some_problems(num=1):
+    with open( os.path.join( cwd, "txt", "problems.txt" ) ) as probs_f:
+        problems_raw = probs_f.readlines()
+    random.shuffle(problems_raw)
+    verbose = g_verbose or num < 7
+    tot = 0
+    per_prob = 510/num if verbose else 400/num
+    for prob in problems_raw:
+        short_version_m = re.match(r'[\w\s]+?:', prob)
+        short_version = (short_version_m and short_version_m.group()) or prob
+        if verbose:
+            yield prob.strip()
+        else:
+            yield short_version.strip()
+
+def get_some_spells(num=1):
+    with open(os.path.join(cwd, "txt", "fft_spells.txt") ) as spells_f:
+        spells = spells_f.readlines()
+    random.shuffle(spells)
+    n = 0
+    limit = random.randint(3,7)
+    for spell in spells:
+        n += 1
+        if n == limit:
+            # these are long, cut off early
+            yield random.choice( ["Oh no! I'm out of MP", "Blast! Out of mana!", "Rats! I'm out of MP!", "No more MP!", "My mana is gone...", "Hark! No more Magic Points!", "my Magic Points ran away!!!!! :(", "Alas! I've no more MP.", "-- What?! I'm out of magic!?!"] )
+        elif n > limit:
+            yield ('.'*random.randint(2, n+1)) + random.choice( ["drained", "no MP", "no mana", "no more MP","no more mana", "MP drained", "mana drained", "I'm out", "alas", "", "", ".", "..", "no more spells", "...", "ow", "no", "no...", "mp... gone", "mana... gone"] ) + ('.'*random.randint(0, n))
+        else:
+            yield spell.strip()
 
 def thingsay(arg):
     """
@@ -684,14 +722,16 @@ def thingsay(arg):
         'countries': get_some_countries,
         'diseases': get_some_diseases,
         'sports': get_some_sports,
-        'numbers': get_some_numbers,
+        #'numbers': get_some_numbers,
         'greetings': get_some_greets,
+        'problems': get_some_problems,
+        'spells': get_some_spells,
     }
     def rando(n=1):
         nd = {_thing: gen(n) for (_thing, gen) in thing_map.items()}
         while True:
             k = random.choice(nd.keys())
-            if k in ['things', 'recipe steps']:
+            if k in ['things', 'recipe steps', 'spells']:
                 continue
             g = nd[k]
             it = g.next()
